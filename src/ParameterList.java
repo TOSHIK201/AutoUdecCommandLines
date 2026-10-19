@@ -24,7 +24,8 @@ class ParameterList {
     public static final Util.Direction direction = Util.Direction.LEFT_TO_RIGHT;
 
     //节理尺寸
-    public static final double[] spacing = new double[]{20, 10, 5, 3, 2, 2, 20, 2, 20, 30};
+    public static final double[] spacing = new double[]{1.4, 1.3, 1.2, 1.1, 1, 1, 1.5, 1, 1.5, 1.5};
+    //public static final double[] spacing = new double[]{14, 13, 12, 11, 10, 10, 15, 10, 15, 15};
 
     //从此往下的参数请不要轻易更改，除非你很清楚你在干什么
     //圆角数

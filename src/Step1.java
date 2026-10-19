@@ -43,7 +43,7 @@ public class Step1 {
 
             writer.write(Util.generateJregions(ParameterList.heightList, ParameterList.modelLength));
             writer.write("\n");
-            writer.write(Util.generateJsets(ParameterList.modelLength, ParameterList.spacing));
+            writer.write(Util.generateJsets(ParameterList.heightList, ParameterList.spacing, ParameterList.modelLength));
 
             writer.write("save " + ParameterList.outputPath + "/dat/step_1.dat\n");
             writer.write("set output " + ParameterList.outputPath + "/output/step_1.jpg\n");

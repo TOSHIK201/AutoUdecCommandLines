@@ -27,12 +27,11 @@ public class Step3 {
             writer.write("hist unbal\n");
             writer.write("solve\n\n");
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_3.dat\n");
+            writer.write("save " + ParameterList.outputPath + "/dat/step_3.dat\n\n");
 
             writer.write(Util.generatePlotCommands("最大不平衡力", "plot hist 1", "step_3_1.jpg"));
             writer.write(Util.generatePlotCommands("Y方向位移云图", "plot block ydis fill", "step_3_2.jpg"));
             writer.write(Util.generatePlotCommands("Y方向应力云图", "plot block syy fill", "step_3_3.jpg"));
-
 
         } catch (IOException e) {
             System.out.println("step3():" + e.getMessage());

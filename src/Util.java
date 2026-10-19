@@ -133,22 +133,42 @@ public class Util {
 
     /**
      * 生成 jset 命令
+     *
+     * @param heightList  高度数组（从高到低）
+     * @param spacingList 期望的节理间距数组（从顶到底）
      * @param modelLength 模型总长
-     * @param spacingList 各层节理间距数组（对应 jregion 1 到 N）
      * @return jset 命令字符串
      */
-    public static String generateJsets(double modelLength, double[] spacingList) {
+    public static String generateJsets(double[] heightList, double[] spacingList, double modelLength) {
         StringBuilder sb = new StringBuilder();
 
-        // 遍历 spacing 数组，长度是多少就生成多少个 jregion 的节理
-        for (int i = 1; i <= spacingList.length; i++) {
-            double spacing = spacingList[i - 1];
-            String range = "range jregion " + i;
+        for (int i = 0; i < spacingList.length; i++) {
+            // 当前层的顶部、底部高度和厚度
+            double top = heightList[i];
+            double bottom = heightList[i + 1];
+            double layerHeight = top - bottom;
 
-            // 0度节理
-            sb.append(String.format("jset 0 0 %.2f 0 0 0 %.2f 0 0 0 %s\n", modelLength, spacing, range));
-            // 90度节理
-            sb.append(String.format("jset 90 0 %.2f 0 0 0 %.2f 0 0 0 %s\n", modelLength, spacing, range));
+            // 期望间距
+            double targetSpacing = spacingList[i];
+
+            //计算 Y 方向份数
+            int numBlocksY = (int) Math.round(layerHeight / targetSpacing);
+            if (numBlocksY < 1) numBlocksY = 1;
+            double spacingY = layerHeight / numBlocksY;
+
+            //计算 X 方向份数
+            int numBlocksX = (int) Math.round(modelLength / spacingY);
+            if (numBlocksX < 1) numBlocksX = 1;
+            double spacingX = modelLength / numBlocksX;
+
+            String range = "range jregion " + (i + 1);
+
+            sb.append(String.format("jset 0 0 %.2f 0 0 0 %.4f 0 0 %.2f %s\n",
+                    modelLength, spacingY, bottom, range));
+
+            sb.append(String.format("jset 90 0 %.2f 0 0 0 %.4f 0 0 %.2f %s\n",
+                    layerHeight, spacingX, bottom, range));
+
             sb.append("\n");
         }
         return sb.toString();
