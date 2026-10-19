@@ -56,8 +56,12 @@ class ParameterList {
 
     // 节理参数 (从上到下)
     public static final double[] jmat_kn = new double[]{10e9, 8e9, 8e9, 4e9, 5e9, 8e9, 12e9, 10e9, 8e9, 8e9};
+
     public static final double[] jmat_ks = new double[]{20e9, 16e9, 16e9, 8e9, 10e9, 16e9, 24e9, 20e9, 16e9, 16e9};
+
     public static final double[] jmat_fric = new double[]{15, 8, 8, 4, 5, 15, 20, 15, 8, 8};
+
     public static final double[] jmat_coh = new double[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
     public static final double[] jmat_ten = new double[]{10e6, 0, 0, 0, 0, 0, 0, 10e6, 0, 0};
 }

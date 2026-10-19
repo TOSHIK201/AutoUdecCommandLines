@@ -256,4 +256,20 @@ public class Util {
 
         return sb.toString();
     }
+
+    /**
+     * 生成 UDEC 出图并保存的命令
+     * @param title    图片标题
+     * @param plotCmd  绘图命令
+     * @param fileName 输出的文件名
+     * @return 出图命令字符串
+     */
+    public static String generatePlotCommands(String title, String plotCmd, String fileName) {
+        return "title\n" +
+                title + "\n" +
+                plotCmd + "\n" +
+                "set output " + ParameterList.outputPath + "/output/" + fileName + "\n" +
+                "set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n" +
+                "copy\n\n";
+    }
 }
