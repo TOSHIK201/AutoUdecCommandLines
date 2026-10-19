@@ -16,7 +16,7 @@ public class Main{
             Files.createDirectories(Paths.get(ParameterList.outputPath + "/dat"));
             Files.createDirectories(Paths.get(ParameterList.outputPath + "/output"));
         } catch (IOException e){
-            System.out.println("main():" + e.getMessage());;
+            System.out.println("main():" + e.getMessage());
         }
 
         CommandLines.commandLines(path_commandLine);
