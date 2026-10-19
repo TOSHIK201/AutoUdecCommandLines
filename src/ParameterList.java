@@ -2,6 +2,15 @@ class ParameterList {
     //输出路径
     public static final String outputPath = "F:/Itasca/UDECProjects/101";
 
+    //step1自动调用step2
+    public static final boolean s1Calls2 = true;
+
+    //step2自动调用step3
+    public static final boolean s2Calls3 = true;
+
+    //step3自动调用step4
+    public static final boolean s3Calls4 = false;
+
     //输出图片宽度
     public static final int outputWidth = 1920;
 
@@ -24,7 +33,7 @@ class ParameterList {
     public static final Util.Direction direction = Util.Direction.LEFT_TO_RIGHT;
 
     //节理尺寸
-    public static final double[] spacing = new double[]{1.4, 1.3, 1.2, 1.1, 1, 1, 1.5, 1, 1.5, 1.5};
+    public static final double[] spacing = new double[]{0.7, 0.6, 0.6, 0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.7};
     //public static final double[] spacing = new double[]{14, 13, 12, 11, 10, 10, 15, 10, 15, 15};
 
     //从此往下的参数请不要轻易更改，除非你很清楚你在干什么

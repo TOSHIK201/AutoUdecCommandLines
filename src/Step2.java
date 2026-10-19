@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class Step2 {
-    public static void step2(String path) {
+    public static void step2(String path, boolean callNext) {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.WRITE,
@@ -41,6 +41,11 @@ public class Step2 {
             writer.write("set output " + ParameterList.outputPath + "/output/step_2.jpg\n");
             writer.write("set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n");
             writer.write("copy");
+
+            if (callNext) {
+                writer.write("\n");
+                writer.write("call " + ParameterList.outputPath + "/code/step_3.txt\n");
+            }
 
         } catch (IOException e){
             System.out.println("stp2():" + e.getMessage());

@@ -20,9 +20,9 @@ public class Main{
         }
 
         CommandLines.commandLines(path_commandLine);
-        Step1.step1(path_Step1);
-        Step2.step2(path_Step2);
-        Step3.step3(path_Step3);
+        Step1.step1(path_Step1, ParameterList.s1Calls2);
+        Step2.step2(path_Step2, ParameterList.s2Calls3);
+        Step3.step3(path_Step3, ParameterList.s3Calls4);
         Step4.step4(path_Step4);
     }
 }

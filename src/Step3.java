@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class Step3 {
-    public static void step3(String path) {
+    public static void step3(String path, boolean callNext) {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.CREATE,
@@ -32,6 +32,11 @@ public class Step3 {
             writer.write(Util.generatePlotCommands("最大不平衡力", "plot hist 1", "step_3_1.jpg"));
             writer.write(Util.generatePlotCommands("Y方向位移云图", "plot block ydis fill", "step_3_2.jpg"));
             writer.write(Util.generatePlotCommands("Y方向应力云图", "plot block syy fill", "step_3_3.jpg"));
+
+            if (callNext) {
+                writer.write("\n");
+                writer.write("call " + ParameterList.outputPath + "/code/step_4.txt\n");
+            }
 
         } catch (IOException e) {
             System.out.println("step3():" + e.getMessage());
