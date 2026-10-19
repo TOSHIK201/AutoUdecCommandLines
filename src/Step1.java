@@ -20,7 +20,7 @@ public class Step1 {
             writer.write("set ovtol " + ParameterList.ovtol + "\n");
             writer.write("round " + ParameterList.round + "\n");
             writer.write("title\n");
-            writer.write("step1\n");
+            writer.write("模型的建立与岩体节理的生成\n");
             writer.write("\n");
             writer.write("block 0 0 0 " + ParameterList.heightList[0] + " " + ParameterList.modelLength + " ");
             writer.write(ParameterList.heightList[0] + " " + ParameterList.modelLength + " " + 0 + "\n");
