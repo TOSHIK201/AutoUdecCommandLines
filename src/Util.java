@@ -153,4 +153,107 @@ public class Util {
         }
         return sb.toString();
     }
+
+    /**
+     * 生成网格划分（gen quad）命令
+     * @param heightList 高度数组（从高到低）
+     * @param spacingList 节理间距数组（从顶到底）
+     * @param modelLength 模型总长
+     * @return gen quad 命令字符串
+     */
+    public static String generateMeshCommands(double[] heightList, double[] spacingList, double modelLength) {
+        StringBuilder sb = new StringBuilder();
+
+        // 顺序遍历，从最顶层开始往下
+        for (int i = 0; i < spacingList.length; i++) {
+            double top = heightList[i];
+            double bottom = heightList[i + 1];
+            double size = spacingList[i];
+
+            //gen quad 2.0 range 0 150.00 59.60 62.30
+            sb.append(String.format("gen quad %.2f range 0 %.2f %.2f %.2f\n",
+                    size, modelLength, bottom, top));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * 生成岩体材质分配与参数赋值
+     */
+    public static String generateMatCommands(double[] heightList, double modelLength,
+                                             double[] rawE, double[] rawPoisson, double[] rawDensity,
+                                             double[] rawFriction, double[] rawCohesion, double[] rawTension) {
+        StringBuilder sb = new StringBuilder();
+        int layerCount = heightList.length - 1;
+
+        sb.append("change cons 3\n\n");
+        for (int i = 0; i < layerCount; i++) {
+            int matId = i + 1;
+            double top = heightList[i];
+            double bottom = heightList[i + 1];
+            sb.append(String.format("change mat %d range 0 %.2f %.2f %.2f\n", matId, modelLength, bottom, top));
+        }
+
+        sb.append("\n");
+
+        for (int i = 0; i < layerCount; i++) {
+            int matId = i + 1;
+            double E_Pa = rawE[i] * 1e9;
+            double v = rawPoisson[i];
+            double density_kg = rawDensity[i] * 1000;
+            double cohesion_Pa = rawCohesion[i] * 1e6;
+            double tension_Pa = rawTension[i] * 1e6;
+            double friction = rawFriction[i];
+
+            double K = E_Pa / (3 * (1 - 2 * v));
+            double G = E_Pa / (2 * (1 + v));
+
+            sb.append(String.format("prop mat %d d %.0f sh %.3e bulk %.3e fric %.2f coh %.3e ten %.3e\n",
+                    matId, density_kg, G, K, friction, cohesion_Pa, tension_Pa));
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 生成节理材料分配与参数赋值命令（change jmat 和 prop jmat）
+     *
+     * @param heightList  高度数组（用于 range 范围）
+     * @param jmatKn      法向刚度数组
+     * @param jmatKs      切向刚度数组
+     * @param jmatFric    节理摩擦角数组
+     * @param jmatCoh     节理内聚力数组
+     * @param jmatTen     节理抗拉强度数组
+     * @param modelLength 模型总长
+     * @return change jmat 与 prop jmat 命令字符串
+     */
+    public static String generatePropJmatCommands(double[] heightList, double[] jmatKn, double[] jmatKs,
+                                                  double[] jmatFric, double[] jmatCoh, double[] jmatTen, double modelLength) {
+        StringBuilder sb = new StringBuilder();
+
+        //设定节理本构模型（库仑滑移 jcons=2）
+        sb.append("change jcons 2\n\n");
+
+        int layerCount = heightList.length - 1;
+
+        //从上到下分配 jmat 编号
+        for (int i = 0; i < layerCount; i++) {
+            int jmatId = i + 1;
+            double top = heightList[i];
+            double bottom = heightList[i + 1];
+
+            sb.append(String.format("change jmat %d range 0 %.2f %.2f %.2f\n",
+                    jmatId, modelLength, bottom, top));
+        }
+        sb.append("\n");
+
+        //
+        for (int i = 0; i < layerCount; i++) {
+            int jmatId = i + 1;
+            sb.append(String.format("prop jmat %d jkn %.1e jks %.1e jfric %.0f jcoh %.1f jten %.1e\n",
+                    jmatId, jmatKn[i], jmatKs[i], jmatFric[i], jmatCoh[i], jmatTen[i]));
+        }
+
+        return sb.toString();
+    }
 }

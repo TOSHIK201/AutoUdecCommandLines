@@ -51,7 +51,7 @@ public class Step1 {
             writer.write("copy\n");
 
         } catch (IOException e){
-            System.out.println("stp1():" + e.getMessage());
+            System.out.println("step1():" + e.getMessage());
         }
     }
 }
