@@ -1,6 +1,8 @@
 class ParameterList {
+    //越靠下的参数越不建议更改！
+
     //输出路径
-    public static final String outputPath = "F:/Itasca/UDECProjects/101";
+    public static final String outputPath = "F:/Itasca/UDECProjects/102";
 
     //step1自动调用step2
     public static final boolean s1Calls2 = true;
@@ -9,7 +11,7 @@ class ParameterList {
     public static final boolean s2Calls3 = true;
 
     //step3自动调用step4
-    public static final boolean s3Calls4 = false;
+    public static final boolean s3Calls4 = true;
 
     //输出图片宽度
     public static final int outputWidth = 1920;
@@ -18,7 +20,7 @@ class ParameterList {
     public static final int outputHeight = 1200;
 
     //模型总宽度(m)
-    public static final double modelLength = 150;
+    public static final double modelLength = 170;
 
     //开挖步数
     public static final int step = 3;
@@ -33,8 +35,8 @@ class ParameterList {
     public static final Util.Direction direction = Util.Direction.LEFT_TO_RIGHT;
 
     //节理尺寸
-    public static final double[] spacing = new double[]{0.7, 0.6, 0.6, 0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.7};
-    //public static final double[] spacing = new double[]{14, 13, 12, 11, 10, 10, 15, 10, 15, 15};
+    //public static final double[] spacing = new double[]{0.7, 0.6, 0.6, 0.5, 0.5, 0.5, 0.7, 0.5, 0.7, 0.7};
+    public static final double[] spacing = new double[]{3, 2.5, 2.5, 2.0, 2.0, 2.0, 3.0, 2.0, 3.0, 3.0};
 
     //从此往下的参数请不要轻易更改，除非你很清楚你在干什么
     //圆角数
@@ -42,6 +44,9 @@ class ParameterList {
 
     //嵌入容差
     public static final double ovtol = 0.8;
+
+    //边界固定半区间宽度
+    public static final double boundTol = 0.1;
 
     //从上至下各层面相对于最下部岩层底部平面的高度
     public static final double[] heightList = new double[]{62.3, 59.6, 56.3, 49.4, 43.3, 34.2, 26.4, 21.6, 15.8, 11.6, 0};

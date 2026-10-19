@@ -15,7 +15,7 @@ public class Step4 {
         )
         ) {
 
-            writer.write("step2");
+            writer.write("u");
 
         } catch (IOException e){
             System.out.println("stp4():" + e.getMessage());

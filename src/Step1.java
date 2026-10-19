@@ -48,6 +48,7 @@ public class Step1 {
             writer.write("save " + ParameterList.outputPath + "/dat/step_1.dat\n");
             writer.write("set output " + ParameterList.outputPath + "/output/step_1.jpg\n");
             writer.write("set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n");
+            writer.write("plot block\n");
             writer.write("copy\n");
 
             if (callNext) {

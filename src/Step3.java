@@ -16,11 +16,24 @@ public class Step3 {
 
             writer.write("restore " + ParameterList.outputPath + "/dat/step_2.dat\n\n");
 
+            double maxHeight = ParameterList.heightList[0];
+            double maxLength = ParameterList.modelLength;
+            double tol = ParameterList.boundTol;
+
             writer.write("set gravity 0 -10\n\n");
 
-            writer.write("bound xvel 0 range -0.10 0.10 0.00 62.30\n");
-            writer.write("bound xvel 0 range 149.90 150.10 0.00 62.30\n");
-            writer.write("bound yvel 0 range 0.00 150.00 -0.10 0.10\n\n");
+            //左
+            writer.write(String.format("bound xvel 0 range %.2f %.2f 0.00 %.2f\n",
+                    -tol, tol, maxHeight));
+
+            //右
+            writer.write(String.format("bound xvel 0 range %.2f %.2f 0.00 %.2f\n",
+                    maxLength - tol, maxLength + tol, maxHeight));
+
+            //底
+            writer.write(String.format("bound yvel 0 range 0.00 %.2f %.2f %.2f\n",
+                    maxLength, -tol, tol));
+            writer.write("\n");
 
             writer.write("damp auto\n");
             writer.write("hist solve_ratio type 1\n");
