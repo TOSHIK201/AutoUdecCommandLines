@@ -18,7 +18,7 @@ public class Step4 {
             writer.write("step2");
 
         } catch (IOException e){
-            e.printStackTrace();
+            System.out.println("stp4():" + e.getMessage());
         }
     }
 }
