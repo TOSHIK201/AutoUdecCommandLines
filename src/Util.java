@@ -295,7 +295,7 @@ public class Util {
             double layerHeight = top - bottom;
             for (JointSet js : layerJoints.get(i)) {
                 double target = Math.max(js.spacing, 0.05);
-                if (ParameterList.debugMode) target *= 10.0;
+                if (ParameterList.debugMode) target *= Math.max(1.0, ParameterList.debugScale);
                 int numY = (int) Math.max(1, Math.round(layerHeight / target));
                 double spacingY = layerHeight / numY;
                 int numX = (int) Math.max(1, Math.round(modelLength / spacingY));

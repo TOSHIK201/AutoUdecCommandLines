@@ -122,13 +122,20 @@ public class ConfigFrame extends JFrame {
         row2.add(autoRun);
 
         JCheckBox debug = new JCheckBox("调试模式", ParameterList.debugMode);
-        debug.setToolTipText("节理间距放大10倍；悬停按钮显示说明");
+        debug.setToolTipText("按倍数放大节理间距；悬停按钮显示说明");
+        JTextField debugScale = new JTextField(String.valueOf(ParameterList.debugScale), 5);
+        debugScale.setToolTipText("调试模式下节理间距的放大倍数");
+        debugScale.setEnabled(ParameterList.debugMode);
+        bindDouble(debugScale, v -> ParameterList.debugScale = Math.max(1.0, v));
         debug.addActionListener(e -> {
             ParameterList.debugMode = debug.isSelected();
+            debugScale.setEnabled(debug.isSelected());
             ToolTipManager.sharedInstance().setEnabled(debug.isSelected());
             canvas.repaint();
         });
         row2.add(debug);
+        row2.add(new JLabel("倍数:"));
+        row2.add(debugScale);
 
         JButton preview = new JButton("预览命令");
         preview.setToolTipText("以 GBK 显示生成的 step_1/2/3 命令");

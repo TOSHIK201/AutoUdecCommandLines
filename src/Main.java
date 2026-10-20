@@ -63,18 +63,30 @@ public class Main {
             Path codeDir = Paths.get(ParameterList.outputPath, "code").toAbsolutePath();
             Files.createDirectories(codeDir);
             // 清空旧的 UDEC.INI，避免 step_1 的 new 命令反复重读 INI 造成死循环
-            Files.write(codeDir.resolve("UDEC.INI"), "; auto-run uses stdin\n".getBytes(Charset.forName("GBK")));
+            Files.write(codeDir.resolve("UDEC.INI"), new byte[0]);
 
             String exeWin = exe.replace("/", "\\");
-            Path bat = codeDir.resolve("_run_udec.bat");
-            String batText = "@echo off\r\n"
-                    + "cd /d \"%~dp0\"\r\n"
-                    + "echo call step_1.txt | \"" + exeWin + "\"\r\n"
-                    + "pause\r\n";
-            Files.write(bat, batText.getBytes(Charset.forName("GBK")));
+            String step1 = codeDir.resolve("step_1.txt").toString().replace("\\", "/");
+            Path ps1 = codeDir.resolve("_run_udec.ps1");
+            String script = "$exe = '" + exeWin + "'\r\n"
+                    + "$dir = '" + codeDir + "'\r\n"
+                    + "$step1 = '" + step1 + "'\r\n"
+                    + "$p = Start-Process -FilePath $exe -WorkingDirectory $dir -PassThru\r\n"
+                    + "$ws = New-Object -ComObject WScript.Shell\r\n"
+                    + "$ok = $false\r\n"
+                    + "for ($i = 0; $i -lt 20; $i++) {\r\n"
+                    + "  if ($ws.AppActivate($p.Id)) { $ok = $true; break }\r\n"
+                    + "  Start-Sleep -Milliseconds 500\r\n"
+                    + "}\r\n"
+                    + "if (-not $ok) { $ok = $ws.AppActivate('UDEC') }\r\n"
+                    + "if ($ok) {\r\n"
+                    + "  Start-Sleep -Seconds 3\r\n"
+                    + "  $ws.SendKeys(\"call $step1{ENTER}\")\r\n"
+                    + "}\r\n";
+            Files.write(ps1, script.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 
-            String command = "start \"\" /D \"" + codeDir + "\" \"" + bat + "\"";
-            ProcessBuilder pb = new ProcessBuilder("cmd.exe", "/c", command);
+            ProcessBuilder pb = new ProcessBuilder("powershell.exe", "-NoProfile",
+                    "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", ps1.toString());
             pb.start();
             System.out.println("已在新窗口启动 UDEC（从 step_1 开始）：" + exe);
         } catch (Exception e) {

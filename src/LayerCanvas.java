@@ -225,7 +225,7 @@ public class LayerCanvas extends JPanel {
 
         for (JointSet js : layer.joints) {
             double target = Math.max(0.05, js.spacing);
-            if (ParameterList.debugMode) target *= 10.0;
+            if (ParameterList.debugMode) target *= Math.max(1.0, ParameterList.debugScale);
             int blocksY = (int) Math.max(1, Math.round(thickness / target));
             double dy = thickness / blocksY;
             int blocksX = (int) Math.max(1, Math.round(ParameterList.modelLength / dy));

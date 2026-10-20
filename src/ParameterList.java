@@ -35,6 +35,7 @@ class ParameterList {
     public static String udecExePath = "F:/Itasca/udec4.0/udec400/udec_dp.exe";
     public static boolean autoRunAfterGenerate = false;
     public static boolean debugMode = false;
+    public static double debugScale = 10.0;
 
     // 各阶段图标题
     public static String step1Title = "模型的建立与岩体节理的生成";
