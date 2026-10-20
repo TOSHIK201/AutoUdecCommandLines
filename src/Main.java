@@ -72,8 +72,8 @@ public class Main {
             deleteQuietly(codeDir.resolve("_run_udec.log"));
             deleteQuietly(codeDir.resolve("commandLine.txt"));
 
-            // 清空隐藏目录里的 UDEC.INI，避免 step_1 的 new 命令反复重读 INI 造成死循环
-            Files.write(runDir.resolve("UDEC.INI"), new byte[0]);
+            // 不覆盖 UDEC 安装目录的 INI；删除旧的工作目录 INI，避免 new 重读造成循环
+            deleteQuietly(runDir.resolve("UDEC.INI"));
 
             String exeWin = exe.replace("/", "\\");
             String step1 = codeDir.resolve("step_1.txt").toString().replace("\\", "/");
