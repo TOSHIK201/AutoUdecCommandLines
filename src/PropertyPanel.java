@@ -55,6 +55,7 @@ public class PropertyPanel extends JPanel {
         rockPanel.add(new JLabel("显示颜色"), c);
         c.gridx = 1;
         colorBtn = new JButton("选择");
+        colorBtn.setToolTipText("选择岩层显示颜色");
         colorBtn.setPreferredSize(new Dimension(70, 22));
         colorBtn.addActionListener(e -> chooseColor());
         rockPanel.add(colorBtn, c);
@@ -98,6 +99,7 @@ public class PropertyPanel extends JPanel {
         addMechRow(mech, c, 2, 0, "jten", f_jten, "jten");
 
         JButton addGroup = new JButton("+ 新建节理组");
+        addGroup.setToolTipText("为当前岩层新增一组节理");
         addGroup.addActionListener(e -> addJointGroup());
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 3));
         btnRow.add(addGroup);

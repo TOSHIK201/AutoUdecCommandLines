@@ -24,8 +24,10 @@ public class CommandPreviewFrame extends JFrame {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         bottom.add(new JLabel("编码：GBK  |  "));
         JButton refresh = new JButton("重新生成并刷新");
+        refresh.setToolTipText("重新生成并按 GBK 读取命令");
         refresh.addActionListener(e -> load());
         JButton close = new JButton("关闭");
+        close.setToolTipText("关闭预览窗口");
         close.addActionListener(e -> dispose());
         bottom.add(refresh);
         bottom.add(close);

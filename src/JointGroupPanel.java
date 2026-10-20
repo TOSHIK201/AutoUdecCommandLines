@@ -47,6 +47,7 @@ public class JointGroupPanel extends JPanel {
         add(grid, BorderLayout.CENTER);
 
         JButton del = new JButton("删除该组");
+        del.setToolTipText("删除该组节理");
         del.setForeground(Color.RED);
         del.addActionListener(e -> onDelete.run());
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 2));

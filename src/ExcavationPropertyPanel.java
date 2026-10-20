@@ -27,6 +27,7 @@ public class ExcavationPropertyPanel extends JPanel {
         status.setBorder(BorderFactory.createEmptyBorder(2, 4, 6, 4));
         JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
         fCoal.setFont(new Font("微软雅黑", Font.BOLD, 12));
+        fCoal.setToolTipText("勾选后当前层作为开挖煤层，颜色变黑");
         top.add(fCoal);
         top.add(status);
         add(top, BorderLayout.NORTH);
