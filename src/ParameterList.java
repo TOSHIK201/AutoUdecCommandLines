@@ -111,7 +111,7 @@ class ParameterList {
             l.color = Color.BLACK;
         }
 
-        plotPresets.add(new PlotPreset("最大不平衡力", "plot hist 1", true,
+        plotPresets.add(new PlotPreset("最大不平衡力", "plot hist 2", true,
                 "最大不平衡力", "step_3_1.jpg"));
         plotPresets.add(new PlotPreset("Y方向位移云图", "plot block ydis fill", true,
                 "Y方向位移云图", "step_3_2.jpg"));
