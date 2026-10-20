@@ -17,42 +17,48 @@ public class Util {
      * @return 坐标集合，例如 [47.0, 55.0, 67.0, 79.0, 91.0, 103.0]
      */
     public static List<Double> calculateExcavationXList(int steps, double stepDist, double cutWidth, Direction direction) {
-        double totalLength = ParameterList.modelLength;
-        double centerX = totalLength / 2.0;
+        return calculateExcavationXList(steps, stepDist, cutWidth, direction,
+                ParameterList.excavationCentered, ParameterList.excavationOriginX);
+    }
 
-        double totalExcavationWidth = cutWidth + (steps * stepDist);
-        double startX = centerX - (totalExcavationWidth / 2.0);
-
+    public static List<Double> calculateExcavationXList(int steps, double stepDist, double cutWidth,
+                                                        Direction direction, boolean centered, double originX) {
+        double totalWidth = cutWidth + steps * stepDist;
+        double left;
+        if (centered) {
+            left = (ParameterList.modelLength - totalWidth) / 2.0;
+        } else if (Double.isNaN(originX)) {
+            left = direction == Direction.LEFT_TO_RIGHT ? 0.0 : ParameterList.modelLength - totalWidth;
+        } else {
+            left = originX;
+        }
         List<Double> xList = new ArrayList<>();
-        xList.add(startX);
 
-        double currentX = startX + cutWidth;
-        xList.add(currentX);
-
-        for (int i = 0; i < steps; i++) {
-            currentX += stepDist;
-            xList.add(currentX);
-        }
-
-        // 如果是从右向左，翻转坐标
-        if (direction == Direction.RIGHT_TO_LEFT) {
-            List<Double> reversedList = new ArrayList<>();
-            for (Double x : xList) {
-                reversedList.add(totalLength - x);
+        if (direction == Direction.LEFT_TO_RIGHT) {
+            xList.add(left);
+            double cursor = left + cutWidth;
+            xList.add(cursor);
+            for (int i = 0; i < steps; i++) {
+                cursor += stepDist;
+                xList.add(cursor);
             }
-            return reversedList;
+        } else {
+            double right = left + totalWidth;
+            xList.add(right);
+            double cursor = right - cutWidth;
+            xList.add(cursor);
+            for (int i = 0; i < steps; i++) {
+                cursor -= stepDist;
+                xList.add(cursor);
+            }
         }
-
         return xList;
     }
 
-    /**
-     * 根据计算好的 X 坐标生成垂直 crack 命令
-     * @param xList   坐标集合
-     * @param yBottom 煤层底部高度
-     * @param yTop    煤层顶部高度
-     * @return 包含所有 crack 命令的字符串
-     */
+    public static List<Double> calculateExcavationXList(ExcavationLayer e) {
+        return calculateExcavationXList(e.steps, e.stepDist, e.cutWidth, e.direction, e.centered, e.originX);
+    }
+
     public static String generateVerticalCracks(List<Double> xList, double yBottom, double yTop) {
         StringBuilder sb = new StringBuilder();
         for (Double x : xList) {
@@ -61,12 +67,6 @@ public class Util {
         return sb.toString();
     }
 
-    /**
-     * 根据传入的高度数组，生成水平层理 crack 命令字符串
-     * @param heightList 高度数组（从高到低，包含顶部和底部边界）
-     * @param modelLength 模型总长度
-     * @return 包含所有水平 crack 命令的字符串
-     */
     public static String generateHorizontalCracks(double[] heightList, double modelLength) {
         StringBuilder sb = new StringBuilder();
         // 从索引 1 开始，到倒数第二个结束，跳过最顶层和最底层
@@ -77,34 +77,23 @@ public class Util {
         return sb.toString();
     }
 
-    /**
-     * 根据 X 坐标集合，生成煤层的分组（group）命令字符串
-     *
-     * @param xList     计算好的 X 坐标集合
-     * @param yBottom   煤层的底部高度
-     * @param yTop      煤层的顶部高度
-     * @param layerNum  煤层编号（例如 9 或 10），用于生成对应的 group 名称
-     * @return 包含所有 group 命令的字符串
-     */
-    public static String generateGroupCommands(List<Double> xList, double yBottom, double yTop, int layerNum) {
+
+    public static String generateGroupCommands(List<Double> xList, double yBottom, double yTop, String layerName) {
         StringBuilder sb = new StringBuilder();
+        double ya = Math.min(yBottom, yTop);
+        double yb = Math.max(yBottom, yTop);
 
-        // 1. 生成切眼分组（第一段）
-        // 索引 0 和 1 分别是切眼的左边界和右边界
-        sb.append(String.format("group openOffCut_%d range %.2f %.2f %.2f %.2f\n",
-                layerNum, xList.get(0), xList.get(1), yBottom, yTop));
+        double xa = Math.min(xList.get(0), xList.get(1));
+        double xb = Math.max(xList.get(0), xList.get(1));
+        sb.append(String.format("group openOffCut_%s range %.2f %.2f %.2f %.2f\n",
+                layerName, xa, xb, ya, yb));
 
-        // 2. 生成开采区分组（后续段）
-        // 从索引 1 开始循环到倒数第二个，每次取相邻两个点
-        // 例如：i=1 时，取 xList[1] 和 xList[2] 作为 state_1_9 的左右边界
         for (int i = 1; i < xList.size() - 1; i++) {
-            double leftX = xList.get(i);
-            double rightX = xList.get(i + 1);
-
-            sb.append(String.format("group state_%d_%d range %.2f %.2f %.2f %.2f\n",
-                    i, layerNum, leftX, rightX, yBottom, yTop));
+            double leftX = Math.min(xList.get(i), xList.get(i + 1));
+            double rightX = Math.max(xList.get(i), xList.get(i + 1));
+            sb.append(String.format("group state_%d_%s range %.2f %.2f %.2f %.2f\n",
+                    i, layerName, leftX, rightX, ya, yb));
         }
-
         return sb.toString();
     }
 
@@ -292,4 +281,76 @@ public class Util {
                 "set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n" +
                 "copy\n\n";
     }
+
+    /**
+     * 按每一层的节理组生成 jset 命令。默认 0/90 两组时，
+     * 先用目标间距把层厚分成整数份，再在 X 方向取同样的边长，保证岩块接近正方形。
+     */
+    public static String generateJsetsFromLayers(double[] heightList, java.util.List<java.util.List<JointSet>> layerJoints,
+                                                 double modelLength) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < layerJoints.size(); i++) {
+            double top = heightList[i];
+            double bottom = heightList[i + 1];
+            double layerHeight = top - bottom;
+            for (JointSet js : layerJoints.get(i)) {
+                double target = Math.max(js.spacing, 0.05);
+                if (ParameterList.debugMode) target *= 10.0;
+                int numY = (int) Math.max(1, Math.round(layerHeight / target));
+                double spacingY = layerHeight / numY;
+                int numX = (int) Math.max(1, Math.round(modelLength / spacingY));
+                double spacingX = modelLength / numX;
+
+                double angle = js.angle;
+                double angleStd = js.angleStdDev;
+                double trace = js.traceLength;
+                double traceStd = js.traceStdDev;
+                double gap = js.bridgeLength;
+                double gapStd = js.bridgeStdDev;
+                double spacingMean;
+                if (Math.abs(angle) < 1e-6) {
+                    spacingMean = spacingY;
+                    if (js.baseGroup) trace = modelLength;
+                } else if (Math.abs(angle - 90.0) < 1e-6) {
+                    spacingMean = spacingX;
+                    if (js.baseGroup) trace = layerHeight;
+                } else {
+                    spacingMean = js.spacing;
+                }
+
+                sb.append("jset ").append(fAngle(angle)).append(' ').append(f2z(angleStd)).append(' ')
+                        .append(f2a(trace)).append(' ').append(f2z(traceStd)).append(' ')
+                        .append(f2z(gap)).append(' ').append(f2z(gapStd)).append(' ')
+                        .append(f4a(spacingMean)).append(' ').append(f4z(js.spacingStdDev)).append(' ')
+                        .append(f2z(js.startX)).append(' ').append(f2a(js.startY))
+                        .append(" range jregion ").append(i + 1).append('\n');
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
+    }
+
+    private static String fAngle(double v) {
+        if (Math.abs(v - Math.rint(v)) < 1e-9) return String.valueOf((int) Math.rint(v));
+        return String.format("%.2f", v);
+    }
+
+    private static String f2z(double v) {
+        if (Math.abs(v) < 1e-12) return "0";
+        return String.format("%.2f", v);
+    }
+
+    private static String f2a(double v) {
+        return String.format("%.2f", v);
+    }
+
+    private static String f4z(double v) {
+        if (Math.abs(v) < 1e-12) return "0";
+        return String.format("%.4f", v);
+    }
+
+    private static String f4a(double v) {
+        return String.format("%.4f", v);
+    }
+
 }

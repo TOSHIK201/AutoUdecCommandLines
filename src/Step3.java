@@ -20,7 +20,8 @@ public class Step3 {
             double maxLength = ParameterList.modelLength;
             double tol = ParameterList.boundTol;
 
-            writer.write("set gravity 0 -10\n\n");
+            String g = (ParameterList.gravity == Math.rint(ParameterList.gravity)) ? String.valueOf((int) ParameterList.gravity) : String.valueOf(ParameterList.gravity);
+            writer.write("set gravity 0 " + g + "\n\n");
 
             //左
             writer.write(String.format("bound xvel 0 range %.2f %.2f 0.00 %.2f\n",
@@ -42,9 +43,11 @@ public class Step3 {
 
             writer.write("save " + ParameterList.outputPath + "/dat/step_3.dat\n\n");
 
-            writer.write(Util.generatePlotCommands("最大不平衡力", "plot hist 1", "step_3_1.jpg"));
-            writer.write(Util.generatePlotCommands("Y方向位移云图", "plot block ydis fill", "step_3_2.jpg"));
-            writer.write(Util.generatePlotCommands("Y方向应力云图", "plot block syy fill", "step_3_3.jpg"));
+            for (PlotPreset preset : ParameterList.plotPresets) {
+                if (preset.selected) {
+                    writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
+                }
+            }
 
             if (callNext) {
                 writer.write("\n");

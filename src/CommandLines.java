@@ -13,7 +13,7 @@ public class CommandLines {
                 StandardOpenOption.CREATE,
                 StandardOpenOption.WRITE
         )){
-            for (int i = 1; i <= 4; i++) {
+            for (int i = 1; i <= 3; i++) {
                 writer.write("call " + ParameterList.outputPath + "/code/step_" + i + ".txt\n");
             }
 

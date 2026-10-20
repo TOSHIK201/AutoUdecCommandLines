@@ -35,7 +35,7 @@ public class Step2 {
             writer.write("\n");
 
             writer.write("title\n");
-            writer.write("模型网格生成与岩体参数的设定\n\n");
+            writer.write(ParameterList.step2Title + "\n\n");
             writer.write("plot block mat\n");
             writer.write("save " + ParameterList.outputPath + "/dat/step_2.dat\n");
             writer.write("set output " + ParameterList.outputPath + "/output/step_2.jpg\n");
