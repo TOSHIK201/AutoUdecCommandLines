@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class Util {
@@ -153,26 +154,17 @@ public class Util {
             double bottom = heightList[i + 1];
             double layerHeight = top - bottom;
 
-            // 期望间距
+            // 输入间距只作期望值，按层厚取整并避开薄条
             double targetSpacing = spacingList[i];
-
-            //计算 Y 方向份数
-            int numBlocksY = (int) Math.round(layerHeight / targetSpacing);
-            if (numBlocksY < 1) numBlocksY = 1;
-            double spacingY = layerHeight / numBlocksY;
-
-            //计算 X 方向份数
-            int numBlocksX = (int) Math.round(modelLength / spacingY);
-            if (numBlocksX < 1) numBlocksX = 1;
-            double spacingX = modelLength / numBlocksX;
+            double spacing = actualSpacing(layerHeight, modelLength, targetSpacing);
 
             String range = "range jregion " + (i + 1);
 
-            sb.append(String.format("jset 0 0 %.2f 0 0 0 %.4f 0 0 %.2f %s\n",
-                    modelLength, spacingY, bottom, range));
+            sb.append(String.format("jset 0 0 %.2f 0 0 0 %.2f 0 0 %.2f %s\n",
+                    modelLength, spacing, bottom, range));
 
-            sb.append(String.format("jset 90 0 %.2f 0 0 0 %.4f 0 0 %.2f %s\n",
-                    layerHeight, spacingX, bottom, range));
+            sb.append(String.format("jset 90 0 %.2f 0 0 0 %.2f 0 0 %.2f %s\n",
+                    layerHeight, spacing, bottom, range));
 
             sb.append("\n");
         }
@@ -180,11 +172,11 @@ public class Util {
     }
 
     /**
-     * 生成网格划分（gen quad）命令
+     * 生成网格划分（gen edge）命令。边长取矩形中心到顶点的距离（半对角线）。
      * @param heightList 高度数组（从高到低）
      * @param spacingList 节理间距数组（从顶到底）
      * @param modelLength 模型总长
-     * @return gen quad 命令字符串
+     * @return gen edge 命令字符串
      */
     public static String generateMeshCommands(double[] heightList, double[] spacingList, double modelLength) {
         StringBuilder sb = new StringBuilder();
@@ -193,11 +185,13 @@ public class Util {
         for (int i = 0; i < spacingList.length; i++) {
             double top = heightList[i];
             double bottom = heightList[i + 1];
-            double size = spacingList[i];
+            double width = layerWidthSpacing(i, spacingList[i]);
+            double height = layerHeightSpacing(i, spacingList[i]);
+            double edge = Math.hypot(width / 2.0, height / 2.0);
 
-            //gen quad 2.0 range 0 150.00 59.60 62.30
-            sb.append(String.format("gen quad %.2f range 0 %.2f %.2f %.2f\n",
-                    size, modelLength, bottom, top));
+            //gen edge 1.4142 range 0 150.00 59.60 62.30
+            sb.append(String.format("gen edge %.4f range 0 %.2f %.2f %.2f\n",
+                    edge, modelLength, bottom, top));
         }
         return sb.toString();
     }
@@ -299,8 +293,8 @@ public class Util {
     }
 
     /**
-     * 按每一层的节理组生成 jset 命令。默认 0/90 两组时，
-     * 先用目标间距把层厚分成整数份，再在 X 方向取同样的边长，保证岩块接近正方形。
+     * 按每一层的节理组生成 jset 命令。输入间距只作期望值，
+     * 0° 用高度间距、90° 用宽度间距；网格用 gen edge，边长取矩形半对角线。
      */
     public static String generateJsetsFromLayers(double[] heightList, java.util.List<java.util.List<JointSet>> layerJoints,
                                                  double modelLength) {
@@ -310,40 +304,181 @@ public class Util {
             double bottom = heightList[i + 1];
             double layerHeight = top - bottom;
             for (JointSet js : layerJoints.get(i)) {
-                double target = Math.max(js.spacing, 0.05);
-                if (ParameterList.debugMode) target *= Math.max(1.0, ParameterList.debugScale);
-                int numY = (int) Math.max(1, Math.round(layerHeight / target));
-                double spacingY = layerHeight / numY;
-                int numX = (int) Math.max(1, Math.round(modelLength / spacingY));
-                double spacingX = modelLength / numX;
-
                 double angle = js.angle;
+                boolean vertical = Math.abs(angle - 90.0) < 1e-6;
+                double widthSpacing = layerWidthSpacing(i, js.spacing);
+                double heightSpacing = layerHeightSpacing(i, js.spacing);
+                double spacingMean = vertical ? widthSpacing : heightSpacing;
+                double startX = vertical && js.baseGroup
+                        ? excavationPhase(i, widthSpacing) : js.startX;
                 double angleStd = js.angleStdDev;
                 double trace = js.traceLength;
                 double traceStd = js.traceStdDev;
                 double gap = js.bridgeLength;
                 double gapStd = js.bridgeStdDev;
-                double spacingMean;
                 if (Math.abs(angle) < 1e-6) {
-                    spacingMean = spacingY;
                     if (js.baseGroup) trace = modelLength;
-                } else if (Math.abs(angle - 90.0) < 1e-6) {
-                    spacingMean = spacingX;
+                } else if (vertical) {
                     if (js.baseGroup) trace = layerHeight;
-                } else {
-                    spacingMean = js.spacing;
                 }
 
                 sb.append("jset ").append(fAngle(angle)).append(' ').append(f2z(angleStd)).append(' ')
                         .append(f2a(trace)).append(' ').append(f2z(traceStd)).append(' ')
                         .append(f2z(gap)).append(' ').append(f2z(gapStd)).append(' ')
-                        .append(f4a(spacingMean)).append(' ').append(f4z(js.spacingStdDev)).append(' ')
-                        .append(f2z(js.startX)).append(' ').append(f2a(js.startY))
+                        .append(vertical ? f2a(spacingMean) : f4a(spacingMean)).append(' ')
+                        .append(f4z(js.spacingStdDev)).append(' ')
+                        .append(f2z(startX)).append(' ').append(f2a(js.startY))
                         .append(" range jregion ").append(i + 1).append('\n');
             }
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing) {
+        return actualSpacing(layerHeight, modelLength, inputSpacing,
+                Collections.emptyList(), Collections.emptyList());
+    }
+
+    public static double layerSpacing(int layerIndex, double inputSpacing) {
+        return layerWidthSpacing(layerIndex, inputSpacing);
+    }
+
+    public static double layerWidthSpacing(int layerIndex, double inputSpacing) {
+        double target = scaledTarget(inputSpacing);
+        double range = Math.max(0.05, target * 0.50);
+        int steps = (int) Math.round(range / 0.01);
+        double best = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (int i = -steps; i <= steps; i++) {
+            double candidate = round2(target + i * 0.01);
+            if (candidate < 0.05) continue;
+            if (!multiple(ParameterList.modelLength, candidate)) continue;
+            if (!alignsWithExcavation(layerIndex, candidate)) continue;
+            double score = Math.abs(candidate - target);
+            if (score < bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        return best > 0 ? best : target;
+    }
+
+    public static double layerHeightSpacing(int layerIndex, double inputSpacing) {
+        double top = ParameterList.heightList[layerIndex];
+        double bottom = ParameterList.heightList[layerIndex + 1];
+        double target = scaledTarget(inputSpacing);
+        int parts = (int) Math.max(1, Math.round((top - bottom) / target + 1e-9));
+        if (ParameterList.debugMode) parts = Math.max(2, parts);
+        return (top - bottom) / parts;
+    }
+
+    private static double scaledTarget(double inputSpacing) {
+        double target = round2(Math.max(inputSpacing, 0.05));
+        if (ParameterList.debugMode) target = round2(target * Math.max(1.0, ParameterList.debugScale));
+        return target;
+    }
+
+    public static double excavationPhase(int layerIndex, double spacing) {
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (e.layerIndex != layerIndex) continue;
+            List<Double> xs = calculateExcavationXList(e);
+            if (!xs.isEmpty()) return xs.get(0) % spacing;
+        }
+        return 0.0;
+    }
+
+    public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing,
+                                       List<Double> xBounds, List<Double> yOffsets) {
+        double target = round2(Math.max(inputSpacing, 0.05));
+        if (ParameterList.debugMode) target = round2(target * Math.max(1.0, ParameterList.debugScale));
+        return searchSpacing(layerHeight, modelLength, target, xBounds, yOffsets, -1);
+    }
+
+    private static double searchSpacing(double layerHeight, double modelLength, double target,
+                                        List<Double> xBounds, List<Double> yOffsets, int layerIndex) {
+
+        double range = Math.max(0.05, target * (layerIndex >= 0 && hasExcavation(layerIndex) ? 0.30 : 0.15));
+        int steps = (int) Math.round(range / 0.01);
+        double best = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (int i = -steps; i <= steps; i++) {
+            double candidate = round2(target + i * 0.01);
+            if (candidate < 0.05) continue;
+            double rh = remainder(layerHeight, candidate);
+            double rl = remainder(modelLength, candidate);
+            if (!noSliver(rh, candidate) || !noSliver(rl, candidate)) continue;
+            if (!alignsWithExcavation(layerIndex, candidate)) continue;
+            boolean boundaryOk = true;
+            for (double x : xBounds) {
+                if (!noBoundarySliver(x, candidate)) {
+                    boundaryOk = false;
+                    break;
+                }
+            }
+            if (boundaryOk) {
+                for (double y : yOffsets) {
+                    if (!noBoundarySliver(y, candidate)) {
+                        boundaryOk = false;
+                        break;
+                    }
+                }
+            }
+            if (!boundaryOk) continue;
+            double score = Math.abs(candidate - target);
+            if (rh < 1e-6) score -= 0.001;
+            if (rl < 1e-6) score -= 0.001;
+            if (score < bestScore) {
+                bestScore = score;
+                best = candidate;
+            }
+        }
+        if (best > 0) return best;
+
+        int parts = (int) Math.max(1, Math.round(layerHeight / target + 1e-9));
+        return round2(layerHeight / parts);
+    }
+
+    private static double remainder(double length, double spacing) {
+        double parts = Math.floor(length / spacing + 1e-9);
+        return length - parts * spacing;
+    }
+
+    private static boolean noSliver(double remainder, double spacing) {
+        return remainder < 1e-6 || remainder >= Math.max(0.10, 0.10 * spacing);
+    }
+
+    private static boolean noBoundarySliver(double offset, double spacing) {
+        double r = remainder(offset, spacing);
+        if (r < 1e-6) return true;
+        double gap = Math.min(r, spacing - r);
+        return gap >= Math.max(0.10, 0.10 * spacing);
+    }
+
+    private static boolean alignsWithExcavation(int layerIndex, double spacing) {
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (e.layerIndex != layerIndex) continue;
+            List<Double> xs = calculateExcavationXList(e);
+            if (xs.isEmpty() || !multiple(xs.get(0), spacing)) return false;
+            if (!multiple(e.cutWidth, spacing) || !multiple(e.stepDist, spacing)) return false;
+        }
+        return true;
+    }
+
+    private static boolean hasExcavation(int layerIndex) {
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (e.layerIndex == layerIndex) return true;
+        }
+        return false;
+    }
+
+    private static boolean multiple(double value, double spacing) {
+        double r = remainder(value, spacing);
+        return r < 1e-6 || spacing - r < 1e-6;
+    }
+
+    private static double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private static String fAngle(double v) {

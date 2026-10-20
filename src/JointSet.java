@@ -13,23 +13,17 @@ public class JointSet {
     public boolean baseGroup = false;
 
     public JointSet() {
-        this(0.0);
+        this(0.0, ParameterList.jointStartX, ParameterList.jointStartY);
     }
 
     public JointSet(double angle) {
-        this(angle, 0.0, 0.0);
+        this(angle, ParameterList.jointStartX, ParameterList.jointStartY);
     }
 
     public JointSet(double angle, double startX, double startY) {
         this.angle = angle;
         this.startX = startX;
         this.startY = startY;
-        this.angleStdDev = 0.0;
-        this.bridgeLength = 5.0;
-        this.bridgeStdDev = 0.0;
-        this.traceLength = 10.0;
-        this.traceStdDev = 0.0;
-        this.spacing = 2.0;
-        this.spacingStdDev = 0.0;
+        ParameterList.applyJointDefaults(this);
     }
 }

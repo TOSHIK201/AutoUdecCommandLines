@@ -13,7 +13,7 @@ public class ConfigFrame extends JFrame {
     private final StagePanel stagePanel;
 
     public ConfigFrame() {
-        setTitle("AutoUDEC - 可视化建模");
+        setTitle("AutoUDEC");
         setSize(1280, 860);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -126,7 +126,10 @@ public class ConfigFrame extends JFrame {
         JTextField debugScale = new JTextField(String.valueOf(ParameterList.debugScale), 5);
         debugScale.setToolTipText("调试模式下节理间距的放大倍数");
         debugScale.setEnabled(ParameterList.debugMode);
-        bindDouble(debugScale, v -> ParameterList.debugScale = Math.max(1.0, v));
+        bindDouble(debugScale, v -> {
+            ParameterList.debugScale = Math.max(1.0, v);
+            canvas.repaint();
+        });
         debug.addActionListener(e -> {
             ParameterList.debugMode = debug.isSelected();
             debugScale.setEnabled(debug.isSelected());

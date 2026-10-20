@@ -205,7 +205,7 @@ public class PropertyPanel extends JPanel {
         LayerData layer = ParameterList.layers.get(currentIndex);
         List<Double> hs = ParameterList.heights();
         double bottom = hs.get(currentIndex + 1);
-        layer.joints.add(new JointSet(45.0, 0.0, bottom));
+        layer.joints.add(new JointSet(ParameterList.jointAngle, ParameterList.jointStartX, bottom));
         refreshGroups();
         if (canvas != null) canvas.repaint();
     }

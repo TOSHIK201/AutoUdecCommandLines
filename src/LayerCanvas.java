@@ -1,7 +1,9 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class LayerCanvas extends JPanel {
     private final PropertyPanel propertyPanel;
@@ -15,6 +17,7 @@ public class LayerCanvas extends JPanel {
     private double mouseWorldX, mouseWorldY;
     private int mouseScreenX = -1, mouseScreenY = -1;
     private final JCheckBox snapToggle = new JCheckBox("吸附", true);
+    private final JCheckBox gridToggle = new JCheckBox("网格", false);
 
     private static final Color BG = new Color(42, 47, 56);
     private static final Color GRID = new Color(68, 74, 84);
@@ -34,6 +37,13 @@ public class LayerCanvas extends JPanel {
         snapToggle.setToolTipText("勾选时吸附到层界面、裂隙与模型边界；取消后自由移动");
         snapToggle.addActionListener(e -> refreshSnap());
         add(snapToggle);
+        gridToggle.setOpaque(false);
+        gridToggle.setForeground(Color.WHITE);
+        gridToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        gridToggle.setFocusable(false);
+        gridToggle.setToolTipText("显示或隐藏坐标网格");
+        gridToggle.addActionListener(e -> repaint());
+        add(gridToggle);
 
         MouseAdapter mouse = new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
@@ -82,6 +92,8 @@ public class LayerCanvas extends JPanel {
     public void doLayout() {
         Dimension d = snapToggle.getPreferredSize();
         snapToggle.setBounds(8, 6, d.width, d.height);
+        Dimension g = gridToggle.getPreferredSize();
+        gridToggle.setBounds(8 + d.width + 8, 6, g.width, g.height);
     }
 
     public void addSelectionListener(java.util.function.IntConsumer listener) {
@@ -183,6 +195,7 @@ public class LayerCanvas extends JPanel {
         List<Double> hs = ParameterList.heights();
         int left = toScreenX(0);
         int right = toScreenX(ParameterList.modelLength);
+        Set<String> drawnJointLines = new HashSet<>();
 
         for (int i = 0; i < ParameterList.layerCount(); i++) {
             LayerData layer = ParameterList.layers.get(i);
@@ -196,7 +209,7 @@ public class LayerCanvas extends JPanel {
 
             Shape oldClip = g2.getClip();
             g2.clipRect(left, yTop, right - left, Math.max(1, yBottom - yTop));
-            drawJoints(g2, layer, top, bottom);
+            drawJoints(g2, layer, i, top, bottom, drawnJointLines);
             g2.setClip(oldClip);
 
             if (i == selectedIndex) {
@@ -227,7 +240,7 @@ public class LayerCanvas extends JPanel {
         }
 
         drawCracks(g2, hs);
-        drawGrid(g2);
+        if (gridToggle.isSelected()) drawGrid(g2);
         if (snapY != null) drawSnapLine(g2, 0, toScreenY(snapY), getWidth(), toScreenY(snapY));
         if (snapX != null) drawSnapLine(g2, toScreenX(snapX), 0, toScreenX(snapX), getHeight());
         if (snapX != null && snapY != null) {
@@ -238,42 +251,53 @@ public class LayerCanvas extends JPanel {
         }
     }
 
-    private void drawJoints(Graphics2D g2, LayerData layer, double top, double bottom) {
+    private void drawJoints(Graphics2D g2, LayerData layer, int layerIndex, double top, double bottom,
+                            Set<String> drawn) {
         double thickness = top - bottom;
         if (thickness <= 0) return;
         g2.setColor(new Color(250, 250, 250, 80));
         g2.setStroke(new BasicStroke(0.65f));
 
         for (JointSet js : layer.joints) {
-            double target = Math.max(0.05, js.spacing);
-            if (ParameterList.debugMode) target *= Math.max(1.0, ParameterList.debugScale);
-            int blocksY = (int) Math.max(1, Math.round(thickness / target));
-            double dy = thickness / blocksY;
-            int blocksX = (int) Math.max(1, Math.round(ParameterList.modelLength / dy));
-            double dx = ParameterList.modelLength / blocksX;
+            boolean vertical = Math.abs(js.angle - 90.0) < 1e-6;
+            double width = Util.layerWidthSpacing(layerIndex, js.spacing);
+            double height = Util.layerHeightSpacing(layerIndex, js.spacing);
+            double spacing = vertical ? width : height;
 
             if (Math.abs(js.angle) < 1e-6) {
-                for (double y = bottom; y <= top + 1e-9; y += dy) {
+                for (double y = bottom; y <= top + 1e-9; y += spacing) {
                     int sy = toScreenY(y);
-                    g2.drawLine(toScreenX(0), sy, toScreenX(ParameterList.modelLength), sy);
+                    drawJointLine(g2, drawn, toScreenX(0), sy, toScreenX(ParameterList.modelLength), sy);
                 }
             } else if (Math.abs(js.angle - 90.0) < 1e-6) {
-                for (double x = 0; x <= ParameterList.modelLength + 1e-9; x += dx) {
+                double start = js.baseGroup ? Util.excavationPhase(layerIndex, width) : 0.0;
+                for (double x = start; x <= ParameterList.modelLength + 1e-9; x += spacing) {
                     int sx = toScreenX(x);
-                    g2.drawLine(sx, toScreenY(top), sx, toScreenY(bottom));
+                    drawJointLine(g2, drawn, sx, toScreenY(top), sx, toScreenY(bottom));
                 }
             } else {
                 double rad = Math.toRadians(js.angle);
                 double ux = Math.cos(rad), uy = Math.sin(rad);
                 double px = -uy, py = ux;
                 double span = ParameterList.modelLength + thickness * 2;
-                for (double d = -span; d <= span; d += target) {
+                for (double d = -span; d <= span; d += spacing) {
                     double cx = js.startX + px * d;
                     double cy = js.startY + py * d;
-                    g2.drawLine(toScreenX(cx - ux * span), toScreenY(cy - uy * span),
+                    drawJointLine(g2, drawn, toScreenX(cx - ux * span), toScreenY(cy - uy * span),
                             toScreenX(cx + ux * span), toScreenY(cy + uy * span));
                 }
             }
+        }
+    }
+
+    private void drawJointLine(Graphics2D g2, Set<String> drawn, int x1, int y1, int x2, int y2) {
+        int ax = x1, ay = y1, bx = x2, by = y2;
+        if (ax > bx || (ax == bx && ay > by)) {
+            ax = x2; ay = y2; bx = x1; by = y1;
+        }
+        String key = ax + "," + ay + "," + bx + "," + by;
+        if (drawn.add(key)) {
+            g2.drawLine(x1, y1, x2, y2);
         }
     }
 

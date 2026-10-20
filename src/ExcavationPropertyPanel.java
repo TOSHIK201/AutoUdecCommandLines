@@ -113,15 +113,6 @@ public class ExcavationPropertyPanel extends JPanel {
             if (layer.savedColor == null) layer.savedColor = layer.color;
             layer.color = Color.BLACK;
             ExcavationLayer e = new ExcavationLayer(index, excavationName(layer, index));
-            e.preset = ParameterList.excavationPreset;
-            e.cutWidth = ParameterList.cutWidth;
-            e.overallHeight = ParameterList.excavationHeight;
-            e.steps = ParameterList.step;
-            e.stepDist = ParameterList.stepDist;
-            e.direction = ParameterList.direction;
-            e.centered = ParameterList.excavationCentered;
-            e.originX = ParameterList.excavationOriginX;
-            e.originY = ParameterList.excavationOriginY;
             ParameterList.excavationLayers.add(e);
             current = e;
         } else if (!mark && existing != null) {
