@@ -13,6 +13,8 @@ public class LayerCanvas extends JPanel {
     private int lastX, lastY;
     private Double snapX, snapY;
     private double mouseWorldX, mouseWorldY;
+    private int mouseScreenX = -1, mouseScreenY = -1;
+    private final JCheckBox snapToggle = new JCheckBox("吸附", true);
 
     private static final Color BG = new Color(42, 47, 56);
     private static final Color GRID = new Color(68, 74, 84);
@@ -24,6 +26,14 @@ public class LayerCanvas extends JPanel {
         this.propertyPanel = propertyPanel;
         setBackground(BG);
         setFocusable(true);
+        setLayout(null);
+        snapToggle.setOpaque(false);
+        snapToggle.setForeground(Color.WHITE);
+        snapToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        snapToggle.setFocusable(false);
+        snapToggle.setToolTipText("勾选时吸附到层界面、裂隙与模型边界；取消后自由移动");
+        snapToggle.addActionListener(e -> refreshSnap());
+        add(snapToggle);
 
         MouseAdapter mouse = new MouseAdapter() {
             @Override public void mousePressed(MouseEvent e) {
@@ -67,6 +77,12 @@ public class LayerCanvas extends JPanel {
 
     public void setStatusLabel(JLabel label) { this.statusLabel = label; }
     public int getSelectedIndex() { return selectedIndex; }
+
+    @Override
+    public void doLayout() {
+        Dimension d = snapToggle.getPreferredSize();
+        snapToggle.setBounds(8, 6, d.width, d.height);
+    }
 
     public void addSelectionListener(java.util.function.IntConsumer listener) {
         selectionListeners.add(listener);
@@ -119,31 +135,36 @@ public class LayerCanvas extends JPanel {
     }
 
     private void updateMouse(int sx, int sy) {
+        mouseScreenX = sx;
+        mouseScreenY = sy;
         mouseWorldX = toWorldX(sx);
         mouseWorldY = toWorldY(sy);
         snapX = null;
         snapY = null;
         double tol = 12.0 / scale;
-        for (double h : ParameterList.heights()) {
-            if (Math.abs(mouseWorldY - h) <= tol) { snapY = h; break; }
-        }
-        List<Double> xTargets = new java.util.ArrayList<>();
-        xTargets.add(0.0);
-        xTargets.add(ParameterList.modelLength);
-        xTargets.addAll(Util.calculateExcavationXList(ParameterList.step, ParameterList.stepDist,
-                ParameterList.cutWidth, ParameterList.direction));
-        for (double x : xTargets) {
-            if (Math.abs(mouseWorldX - x) <= tol) { snapX = x; break; }
+        if (snapToggle.isSelected()) {
+            snapY = SnapTargets.nearest(mouseWorldY, SnapTargets.yTargets(mouseWorldX, tol), tol);
+            snapX = SnapTargets.nearest(mouseWorldX, SnapTargets.xTargets(mouseWorldY, tol), tol);
         }
         if (statusLabel != null) {
             double sxShow = snapX != null ? snapX : mouseWorldX;
             double syShow = snapY != null ? snapY : mouseWorldY;
-            statusLabel.setText(String.format("x = %.2f m%s   y = %.2f m%s   当前第 %d 层",
+            statusLabel.setText(String.format("x = %.2f m%s   y = %.2f m%s   当前第 %d 层%s",
                     sxShow, snapX != null ? " [吸附]" : "",
                     syShow, snapY != null ? " [吸附]" : "",
-                    selectedIndex + 1));
+                    selectedIndex + 1, snapToggle.isSelected() ? "" : "   吸附关"));
         }
         repaint();
+    }
+
+    private void refreshSnap() {
+        if (mouseScreenX >= 0 && mouseScreenY >= 0) {
+            updateMouse(mouseScreenX, mouseScreenY);
+        } else {
+            snapX = null;
+            snapY = null;
+            repaint();
+        }
     }
 
     private double toWorldX(int sx) { return (sx - originX) / scale; }
@@ -314,16 +335,34 @@ public class LayerCanvas extends JPanel {
     private void drawCrackLayer(Graphics2D g2, ExcavationLayer e, List<Double> hs) {
         int layerIndex = e.layerIndex;
         if (layerIndex < 0 || layerIndex + 1 >= hs.size()) return;
-        double bottom = (e.centered || Double.isNaN(e.originY))
-                ? hs.get(layerIndex + 1) : e.originY;
-        double height = e.overallHeight > 0 ? e.overallHeight : ParameterList.layers.get(layerIndex).thickness;
+        double bottom = Util.excavationBottom(e, layerIndex);
+        double height = Util.excavationHeight(e, layerIndex);
         int y1 = toScreenY(bottom);
         int y2 = toScreenY(bottom + height);
         List<Double> cracks = Util.calculateExcavationXList(e);
+        double xMin = Double.MAX_VALUE;
+        double xMax = -Double.MAX_VALUE;
+        for (double x : cracks) {
+            xMin = Math.min(xMin, x);
+            xMax = Math.max(xMax, x);
+        }
+        if (!isBoundaryY(bottom, hs)) {
+            g2.drawLine(toScreenX(xMin), y1, toScreenX(xMax), y1);
+        }
+        if (!isBoundaryY(bottom + height, hs)) {
+            g2.drawLine(toScreenX(xMin), y2, toScreenX(xMax), y2);
+        }
         for (double x : cracks) {
             int sx = toScreenX(x);
             g2.drawLine(sx, y1, sx, y2);
         }
+    }
+
+    private boolean isBoundaryY(double y, List<Double> hs) {
+        for (double h : hs) {
+            if (Math.abs(y - h) < 1e-6) return true;
+        }
+        return false;
     }
 
 

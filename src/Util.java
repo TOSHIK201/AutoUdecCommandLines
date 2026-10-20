@@ -59,6 +59,17 @@ public class Util {
         return calculateExcavationXList(e.steps, e.stepDist, e.cutWidth, e.direction, e.centered, e.originX);
     }
 
+    public static double excavationBottom(ExcavationLayer e, int layerIndex) {
+        if (e.centered || Double.isNaN(e.originY)) {
+            return ParameterList.heightList[layerIndex + 1];
+        }
+        return e.originY;
+    }
+
+    public static double excavationHeight(ExcavationLayer e, int layerIndex) {
+        return e.overallHeight > 0 ? e.overallHeight : ParameterList.layers.get(layerIndex).thickness;
+    }
+
     public static String generateVerticalCracks(List<Double> xList, double yBottom, double yTop) {
         StringBuilder sb = new StringBuilder();
         for (Double x : xList) {
@@ -75,6 +86,11 @@ public class Util {
             sb.append(String.format("crack 0 %.2f %.2f %.2f\n", height, modelLength, height));
         }
         return sb.toString();
+    }
+
+    public static String generateHorizontalCrack(double x1, double x2, double y) {
+        return String.format("crack %.2f %.2f %.2f %.2f\n",
+                Math.min(x1, x2), y, Math.max(x1, x2), y);
     }
 
 

@@ -35,17 +35,18 @@ public class Step1 {
             for (ExcavationLayer e : excavation) {
                 int idx = Math.max(0, Math.min(e.layerIndex, ParameterList.heightList.length - 2));
                 List<Double> X = Util.calculateExcavationXList(e);
-                double bottom = excavationBottom(e, idx);
-                double height = e.overallHeight > 0 ? e.overallHeight : ParameterList.layers.get(idx).thickness;
-                writer.write(Util.generateVerticalCracks(X, bottom, bottom + height));
+                double bottom = Util.excavationBottom(e, idx);
+                double top = bottom + Util.excavationHeight(e, idx);
+                writeBoundaryCracks(writer, X, bottom, top);
+                writer.write(Util.generateVerticalCracks(X, bottom, top));
                 writer.write("\n");
             }
             for (ExcavationLayer e : excavation) {
                 int idx = Math.max(0, Math.min(e.layerIndex, ParameterList.heightList.length - 2));
                 List<Double> X = Util.calculateExcavationXList(e);
-                double bottom = excavationBottom(e, idx);
-                double height = e.overallHeight > 0 ? e.overallHeight : ParameterList.layers.get(idx).thickness;
-                writer.write(Util.generateGroupCommands(X, bottom, bottom + height, e.name));
+                double bottom = Util.excavationBottom(e, idx);
+                double top = bottom + Util.excavationHeight(e, idx);
+                writer.write(Util.generateGroupCommands(X, bottom, top, e.name));
             }
             writer.write("\n");
 
@@ -69,10 +70,28 @@ public class Step1 {
         }
     }
 
-    private static double excavationBottom(ExcavationLayer e, int idx) {
-        if (e.centered || Double.isNaN(e.originY)) {
-            return ParameterList.heightList[idx + 1];
+    private static void writeBoundaryCracks(BufferedWriter writer, List<Double> X,
+                                            double bottom, double top) throws IOException {
+        // 边界落在层内时补水平裂隙，保证 group range 四边闭合
+        if (X.isEmpty()) return;
+        double xMin = X.get(0);
+        double xMax = X.get(0);
+        for (double x : X) {
+            xMin = Math.min(xMin, x);
+            xMax = Math.max(xMax, x);
         }
-        return e.originY;
+        if (!isExistingHorizontalCrack(bottom)) {
+            writer.write(Util.generateHorizontalCrack(xMin, xMax, bottom));
+        }
+        if (!isExistingHorizontalCrack(top)) {
+            writer.write(Util.generateHorizontalCrack(xMin, xMax, top));
+        }
+    }
+
+    private static boolean isExistingHorizontalCrack(double y) {
+        for (double h : ParameterList.heightList) {
+            if (Math.abs(y - h) < 1e-6) return true;
+        }
+        return false;
     }
 }

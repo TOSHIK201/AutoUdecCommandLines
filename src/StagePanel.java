@@ -97,20 +97,7 @@ public class StagePanel extends JPanel {
         bindDouble(fTol, v -> ParameterList.boundTol = v);
         panel.add(form, BorderLayout.NORTH);
 
-        JPanel plots = new JPanel(new GridBagLayout());
-        plots.setBorder(BorderFactory.createTitledBorder("绘图预设（默认前三种，可继续勾选叠加）"));
-        GridBagConstraints pc = grid();
-        for (int i = 0; i < ParameterList.plotPresets.size(); i++) {
-            PlotPreset preset = ParameterList.plotPresets.get(i);
-            JCheckBox check = new JCheckBox(preset.label, preset.selected);
-            JTextField title = new JTextField(preset.title, 18);
-            addPlotRow(plots, pc, i, check, title);
-            check.addActionListener(e -> preset.selected = check.isSelected());
-            bindString(title, v -> preset.title = v);
-        }
-        JScrollPane plotScroll = new JScrollPane(plots);
-        plotScroll.setBorder(null);
-        panel.add(plotScroll, BorderLayout.CENTER);
+        panel.add(new PlotPresetPanel(), BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
@@ -141,7 +128,6 @@ public class StagePanel extends JPanel {
         bar.add(button);
         return bar;
     }
-
     private GridBagConstraints grid() {
         GridBagConstraints c = new GridBagConstraints();
         c.fill = GridBagConstraints.NONE;
@@ -149,7 +135,6 @@ public class StagePanel extends JPanel {
         c.insets = new Insets(2, 4, 2, 4);
         return c;
     }
-
     private void addRow(JPanel panel, GridBagConstraints c, int row, String label, JComponent field, int width) {
         c.gridy = row;
         c.gridx = 0;
@@ -166,22 +151,6 @@ public class StagePanel extends JPanel {
         panel.add(new JLabel(""), c);
         c.weightx = 0;
     }
-
-    private void addPlotRow(JPanel panel, GridBagConstraints c, int row, JCheckBox check, JTextField title) {
-        c.gridy = row;
-        c.gridx = 0;
-        panel.add(check, c);
-        c.gridx = 1;
-        panel.add(new JLabel("图头"), c);
-        c.gridx = 2;
-        title.setPreferredSize(new Dimension(220, 22));
-        panel.add(title, c);
-        c.gridx = 3;
-        c.weightx = 1.0;
-        panel.add(new JLabel(""), c);
-        c.weightx = 0;
-    }
-
     private void bindDouble(JTextField field, DoubleConsumer setter) {
         field.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) { saveDouble(field, setter); }
@@ -206,7 +175,6 @@ public class StagePanel extends JPanel {
         });
         field.addActionListener(e -> saveInt(field, setter));
     }
-
     private void saveInt(JTextField field, IntConsumer setter) {
         try {
             String text = field.getText().trim();

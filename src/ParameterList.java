@@ -131,10 +131,8 @@ class ParameterList {
                 "最大主应力云图", "step_3_9.jpg"));
         plotPresets.add(new PlotPreset("最小主应力云图", "plot block sig2", false,
                 "最小主应力云图", "step_3_10.jpg"));
-        plotPresets.add(new PlotPreset("节理图", "plot joint", false,
-                "节理图", "step_3_11.jpg"));
         plotPresets.add(new PlotPreset("塑性区图", "plot block plastic", false,
-                "塑性区图", "step_3_12.jpg"));
+                "塑性区图", "step_3_11.jpg"));
         syncFromLayers();
     }
 
