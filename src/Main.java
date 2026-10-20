@@ -1,9 +1,8 @@
+import javax.swing.*;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import javax.swing.SwingUtilities;
 
 public class Main {
     public static void generateStep1() {
@@ -61,27 +60,52 @@ public class Main {
         }
         try {
             Path codeDir = Paths.get(ParameterList.outputPath, "code").toAbsolutePath();
+            Path runDir = Paths.get(ParameterList.outputPath, ".udec_run").toAbsolutePath();
             Files.createDirectories(codeDir);
-            // 清空旧的 UDEC.INI，避免 step_1 的 new 命令反复重读 INI 造成死循环
-            Files.write(codeDir.resolve("UDEC.INI"), new byte[0]);
+            Files.createDirectories(runDir);
+            try { Files.setAttribute(runDir, "dos:hidden", true); } catch (Exception ignored) { }
+
+            // code 只保留生成文件；旧的辅助文件清理掉
+            deleteQuietly(codeDir.resolve("UDEC.INI"));
+            deleteQuietly(codeDir.resolve("_run_udec.ps1"));
+            deleteQuietly(codeDir.resolve("_run_udec.bat"));
+            deleteQuietly(codeDir.resolve("_run_udec.log"));
+            deleteQuietly(codeDir.resolve("commandLine.txt"));
+
+            // 清空隐藏目录里的 UDEC.INI，避免 step_1 的 new 命令反复重读 INI 造成死循环
+            Files.write(runDir.resolve("UDEC.INI"), new byte[0]);
 
             String exeWin = exe.replace("/", "\\");
             String step1 = codeDir.resolve("step_1.txt").toString().replace("\\", "/");
-            Path ps1 = codeDir.resolve("_run_udec.ps1");
+            Path ps1 = runDir.resolve("_run_udec.ps1");
             String script = "$exe = '" + exeWin + "'\r\n"
-                    + "$dir = '" + codeDir + "'\r\n"
+                    + "$dir = '" + runDir + "'\r\n"
                     + "$step1 = '" + step1 + "'\r\n"
-                    + "$p = Start-Process -FilePath $exe -WorkingDirectory $dir -PassThru\r\n"
                     + "$ws = New-Object -ComObject WScript.Shell\r\n"
-                    + "$ok = $false\r\n"
+                    + "$target = $null\r\n"
+                    + "$p = Start-Process -FilePath $exe -ArgumentList '2048' -WorkingDirectory $dir -PassThru\r\n"
                     + "for ($i = 0; $i -lt 20; $i++) {\r\n"
-                    + "  if ($ws.AppActivate($p.Id)) { $ok = $true; break }\r\n"
+                    + "  $target = Get-Process | Where-Object { $_.MainWindowTitle -match '^UDEC\\s+\\d' } | Select-Object -First 1\r\n"
+                    + "  if ($target) { break }\r\n"
+                    + "  if ($p.HasExited) { break }\r\n"
                     + "  Start-Sleep -Milliseconds 500\r\n"
                     + "}\r\n"
-                    + "if (-not $ok) { $ok = $ws.AppActivate('UDEC') }\r\n"
-                    + "if ($ok) {\r\n"
-                    + "  Start-Sleep -Seconds 3\r\n"
+                    + "if (-not $target) {\r\n"
+                    + "  if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue }\r\n"
+                    + "  $p = Start-Process -FilePath $exe -ArgumentList '1024' -WorkingDirectory $dir -PassThru\r\n"
+                    + "  for ($i = 0; $i -lt 20; $i++) {\r\n"
+                    + "    $target = Get-Process | Where-Object { $_.MainWindowTitle -match '^UDEC\\s+\\d' } | Select-Object -First 1\r\n"
+                    + "    if ($target) { break }\r\n"
+                    + "    if ($p.HasExited) { break }\r\n"
+                    + "    Start-Sleep -Milliseconds 500\r\n"
+                    + "  }\r\n"
+                    + "}\r\n"
+                    + "if ($target) {\r\n"
+                    + "  $ws.AppActivate($target.Id) | Out-Null\r\n"
+                    + "  Start-Sleep -Seconds 2\r\n"
                     + "  $ws.SendKeys(\"call $step1{ENTER}\")\r\n"
+                    + "} else {\r\n"
+                    + "  'UDEC window not found' | Out-File -Encoding ASCII ($dir + '\\_run_udec.log')\r\n"
                     + "}\r\n";
             Files.write(ps1, script.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
 
@@ -91,6 +115,13 @@ public class Main {
             System.out.println("已在新窗口启动 UDEC（从 step_1 开始）：" + exe);
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(null, "自动调用 UDEC 失败：\n" + e.getMessage());
+        }
+    }
+
+    private static void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (Exception ignored) {
         }
     }
 
