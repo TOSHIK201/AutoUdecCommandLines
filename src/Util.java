@@ -57,18 +57,50 @@ public class Util {
     }
 
     public static List<Double> calculateExcavationXList(ExcavationLayer e) {
-        return calculateExcavationXList(e.steps, e.stepDist, e.cutWidth, e.direction, e.centered, e.originX);
+        List<Double> xs = new ArrayList<>();
+        double left = Math.min(e.x1, e.x2);
+        double right = Math.max(e.x1, e.x2);
+        double width = right - left;
+        if (width <= 1e-9) return xs;
+        double cut = Math.min(Math.max(e.cutWidth, 0), width);
+        double step = e.stepDist > 1e-9 ? e.stepDist : 0;
+
+        if (e.direction == Direction.LEFT_TO_RIGHT) {
+            double cursor = left;
+            addIfNew(xs, cursor);
+            cursor = Math.min(cursor + cut, right);
+            addIfNew(xs, cursor);
+            while (step > 0 && cursor + step < right - 1e-9) {
+                cursor += step;
+                addIfNew(xs, cursor);
+            }
+            addIfNew(xs, right);
+        } else {
+            double cursor = right;
+            addIfNew(xs, cursor);
+            cursor = Math.max(cursor - cut, left);
+            addIfNew(xs, cursor);
+            while (step > 0 && cursor - step > left + 1e-9) {
+                cursor -= step;
+                addIfNew(xs, cursor);
+            }
+            addIfNew(xs, left);
+        }
+        return xs;
     }
 
     public static double excavationBottom(ExcavationLayer e, int layerIndex) {
-        if (e.centered || Double.isNaN(e.originY)) {
-            return ParameterList.heightList[layerIndex + 1];
-        }
-        return e.originY;
+        return Math.min(e.y1, e.y2);
     }
 
     public static double excavationHeight(ExcavationLayer e, int layerIndex) {
-        return e.overallHeight > 0 ? e.overallHeight : ParameterList.layers.get(layerIndex).thickness;
+        return Math.abs(e.y2 - e.y1);
+    }
+
+    private static void addIfNew(List<Double> xs, double value) {
+        if (xs.isEmpty() || Math.abs(xs.get(xs.size() - 1) - value) > 1e-9) {
+            xs.add(value);
+        }
     }
 
     public static String generateVerticalCracks(List<Double> xList, double yBottom, double yTop) {
@@ -308,9 +340,15 @@ public class Util {
                 boolean vertical = Math.abs(angle - 90.0) < 1e-6;
                 double widthSpacing = layerWidthSpacing(i, js.spacing);
                 double heightSpacing = layerHeightSpacing(i, js.spacing);
+                if (vertical && js.baseGroup) {
+                    appendBrickJsets(sb, i, js, bottom, widthSpacing);
+                    continue;
+                }
                 double spacingMean = vertical ? widthSpacing : heightSpacing;
-                double startX = vertical && js.baseGroup
-                        ? excavationPhase(i, widthSpacing) : js.startX;
+                if (Math.abs(angle) < 1e-6 && js.baseGroup) {
+                    spacingMean = exactRowHeight(layerHeight, heightSpacing);
+                }
+                double startX = js.startX;
                 double angleStd = js.angleStdDev;
                 double trace = js.traceLength;
                 double traceStd = js.traceStdDev;
@@ -327,12 +365,43 @@ public class Util {
                         .append(f2z(gap)).append(' ').append(f2z(gapStd)).append(' ')
                         .append(vertical ? f2a(spacingMean) : f4a(spacingMean)).append(' ')
                         .append(f4z(js.spacingStdDev)).append(' ')
-                        .append(f2z(startX)).append(' ').append(f2a(js.startY))
+                        .append(f4z(startX)).append(' ').append(f2a(js.startY))
                         .append(" range jregion ").append(i + 1).append('\n');
             }
             sb.append('\n');
         }
         return sb.toString();
+    }
+
+    private static void appendBrickJsets(StringBuilder sb, int layerIndex, JointSet js,
+                                         double bottom, double widthSpacing) {
+        double target = layerHeightSpacing(layerIndex, js.spacing);
+        double layerHeight = ParameterList.layers.get(layerIndex).thickness;
+        double rowHeight = exactRowHeight(layerHeight, target);
+        double phase = excavationPhase(layerIndex, widthSpacing);
+        appendVerticalSet(sb, layerIndex, js, phase, bottom, rowHeight);
+        appendVerticalSet(sb, layerIndex, js, phase + widthSpacing / 2.0,
+                bottom + rowHeight, rowHeight);
+    }
+
+    private static void appendVerticalSet(StringBuilder sb, int layerIndex, JointSet js,
+                                          double startX, double startY, double rowHeight) {
+        sb.append("jset 90 ").append(f2z(js.angleStdDev)).append(' ')
+                .append(f4a(rowHeight)).append(' ').append(f2z(js.traceStdDev)).append(' ')
+                .append(f4a(rowHeight)).append(' ').append(f2z(js.bridgeStdDev)).append(' ')
+                .append(f2a(widthSpacingFor(layerIndex, js))).append(' ')
+                .append(f4z(js.spacingStdDev)).append(' ')
+                .append(f4z(startX)).append(' ').append(f4a(startY))
+                .append(" range jregion ").append(layerIndex + 1).append('\n');
+    }
+
+    private static double widthSpacingFor(int layerIndex, JointSet js) {
+        return layerWidthSpacing(layerIndex, js.spacing);
+    }
+
+    private static double exactRowHeight(double layerHeight, double heightSpacing) {
+        int rows = (int) Math.max(1, Math.round(layerHeight / heightSpacing + 1e-9));
+        return layerHeight / rows;
     }
 
     public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing) {

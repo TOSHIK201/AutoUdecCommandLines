@@ -34,13 +34,12 @@ public class Step2 {
             ));
             writer.write("\n");
 
-            writer.write("title\n");
-            writer.write(ParameterList.step2Title + "\n\n");
-            writer.write("plot block mat\n");
             writer.write("save " + ParameterList.outputPath + "/dat/step_2.dat\n");
-            writer.write("set output " + ParameterList.outputPath + "/output/step_2.jpg\n");
-            writer.write("set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n");
-            writer.write("copy");
+            for (PlotPreset preset : ParameterList.plotPresets2) {
+                if (preset.selected && preset.histCommand == null) {
+                    writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
+                }
+            }
 
             if (callNext) {
                 writer.write("\n");

@@ -9,6 +9,8 @@ class ParameterList {
 
     // 输出路径
     public static String outputPath = "F:/Itasca/UDECProjects/102";
+    public static String projectPath = "";
+    public static boolean restoring = false;
 
     // 阶段自动调用开关
     public static boolean s1Calls2 = true;
@@ -47,7 +49,9 @@ class ParameterList {
     // 各阶段图标题
     public static String step1Title = "模型的建立与岩体节理的生成";
     public static String step2Title = "模型网格生成与岩体参数的设定";
-    public static final java.util.List<PlotPreset> plotPresets = new java.util.ArrayList<>();
+    public static final java.util.List<PlotPreset> plotPresets1 = new java.util.ArrayList<>();
+    public static final java.util.List<PlotPreset> plotPresets2 = new java.util.ArrayList<>();
+    public static final java.util.List<PlotPreset> plotPresets3 = new java.util.ArrayList<>();
 
     // 煤层在 layers 中的下标（从上往下，0 开始）
     public static int coal9Layer = 6;
@@ -58,6 +62,15 @@ class ParameterList {
     public static double ovtol = 0.8;
     public static double boundTol = 0.1;
     public static double gravity = -10.0;
+    public static double stressTop = 0.0;
+    public static double stressGradient = 25000.0;
+    public static double stressX = 0.0;
+    public static double stressXY = 0.0;
+    public static boolean stressEnabled = true;
+
+    // 画线边界
+    public static double boundaryWidth = 0.2;
+    public static final List<BoundaryCondition> boundaries = new ArrayList<>();
 
     // 新建节理组的默认值
     public static double jointAngle = 45.0;
@@ -130,29 +143,60 @@ class ParameterList {
             l.color = Color.BLACK;
         }
 
-        plotPresets.add(new PlotPreset("最大不平衡力", "plot hist 2", true,
-                "最大不平衡力", "step_3_1.jpg"));
-        plotPresets.add(new PlotPreset("Y方向位移云图", "plot block ydis fill", true,
-                "Y方向位移云图", "step_3_2.jpg"));
-        plotPresets.add(new PlotPreset("Y方向应力云图", "plot block syy fill", true,
-                "Y方向应力云图", "step_3_3.jpg"));
-        plotPresets.add(new PlotPreset("单元体模型图", "plot zone", true,
-                "块体模型图", "step_3_4.jpg"));
-        plotPresets.add(new PlotPreset("材料分布图", "plot block mat", false,
-                "材料分布图", "step_3_5.jpg"));
-        plotPresets.add(new PlotPreset("X方向位移云图", "plot block xdis fill", false,
-                "X方向位移云图", "step_3_6.jpg"));
-        plotPresets.add(new PlotPreset("X方向应力云图", "plot block sxx fill", false,
-                "X方向应力云图", "step_3_7.jpg"));
-        plotPresets.add(new PlotPreset("剪应力云图", "plot block sxy fill", false,
-                "剪应力云图", "step_3_8.jpg"));
-        plotPresets.add(new PlotPreset("最大主应力云图", "plot block sig1", false,
-                "最大主应力云图", "step_3_9.jpg"));
-        plotPresets.add(new PlotPreset("最小主应力云图", "plot block sig2", false,
-                "最小主应力云图", "step_3_10.jpg"));
-        plotPresets.add(new PlotPreset("塑性区图", "plot block plastic", false,
-                "塑性区图", "step_3_11.jpg"));
+        plotPresets1.addAll(PlotPresets.stage1());
+        plotPresets2.addAll(PlotPresets.stage2());
+        plotPresets3.addAll(PlotPresets.stage3());
         syncFromLayers();
+        initDefaultBoundaries();
+    }
+
+    static void ensurePlotPresets() {
+        if (plotPresets1.isEmpty()) plotPresets1.addAll(PlotPresets.stage1());
+        if (plotPresets2.isEmpty()) plotPresets2.addAll(PlotPresets.stage2());
+        if (plotPresets3.isEmpty()) plotPresets3.addAll(PlotPresets.stage3());
+    }
+
+    static void initDefaultBoundaries() {
+        boundaries.clear();
+        double h = heights().get(0);
+        double l = modelLength;
+        BoundaryCondition left = new BoundaryCondition(
+                BoundaryCondition.Type.VELOCITY_X, 0, 0, 0, h, boundaryWidth);
+        left.name = "左边界";
+        left.edge = BoundaryCondition.Edge.LEFT;
+        BoundaryCondition right = new BoundaryCondition(
+                BoundaryCondition.Type.VELOCITY_X, l, 0, l, h, boundaryWidth);
+        right.name = "右边界";
+        right.edge = BoundaryCondition.Edge.RIGHT;
+        BoundaryCondition bottom = new BoundaryCondition(
+                BoundaryCondition.Type.VELOCITY_Y, 0, 0, l, 0, boundaryWidth);
+        bottom.name = "底边界";
+        bottom.edge = BoundaryCondition.Edge.BOTTOM;
+        BoundaryCondition top = new BoundaryCondition(
+                BoundaryCondition.Type.STRESS, 0, h, l, h, boundaryWidth);
+        top.name = "上边界（应力）";
+        top.edge = BoundaryCondition.Edge.TOP;
+        boundaries.add(left);
+        boundaries.add(right);
+        boundaries.add(bottom);
+        boundaries.add(top);
+    }
+
+    public static void syncBoundaryEdges() {
+        if (heightList == null || heightList.length == 0) return;
+        double h = heightList[0];
+        double l = modelLength;
+        for (BoundaryCondition b : boundaries) {
+            if (b.edge == BoundaryCondition.Edge.LEFT) {
+                b.sx = 0; b.ex = 0; b.sy = 0; b.ey = h;
+            } else if (b.edge == BoundaryCondition.Edge.RIGHT) {
+                b.sx = l; b.ex = l; b.sy = 0; b.ey = h;
+            } else if (b.edge == BoundaryCondition.Edge.BOTTOM) {
+                b.sx = 0; b.ex = l; b.sy = 0; b.ey = 0;
+            } else if (b.edge == BoundaryCondition.Edge.TOP) {
+                b.sx = 0; b.ex = l; b.sy = h; b.ey = h;
+            }
+        }
     }
 
     static void applyExcavationDefaults(ExcavationLayer e) {
@@ -195,10 +239,16 @@ class ParameterList {
         layerJoints = new ArrayList<>();
 
         for (ExcavationLayer e : excavationLayers) {
-            e.layerIndex = Math.max(0, Math.min(e.layerIndex, Math.max(0, n - 1)));
+            if (e.layerIndex >= 0) {
+                e.layerIndex = Math.min(e.layerIndex, Math.max(0, n - 1));
+            }
         }
-        if (!excavationLayers.isEmpty()) coal9Layer = excavationLayers.get(0).layerIndex;
-        if (excavationLayers.size() > 1) coal10Layer = excavationLayers.get(1).layerIndex;
+        if (!excavationLayers.isEmpty() && excavationLayers.get(0).layerIndex >= 0) {
+            coal9Layer = excavationLayers.get(0).layerIndex;
+        }
+        if (excavationLayers.size() > 1 && excavationLayers.get(1).layerIndex >= 0) {
+            coal10Layer = excavationLayers.get(1).layerIndex;
+        }
 
         double h = 0;
         for (int i = n - 1; i >= 0; i--) {
@@ -239,6 +289,27 @@ class ParameterList {
             jmat_coh[i] = l.jcoh;
             jmat_ten[i] = l.jten;
             layerJoints.add(l.joints);
+        }
+        syncExcavationGeometry();
+        syncBoundaryEdges();
+    }
+
+    static void syncExcavationGeometry() {
+        for (ExcavationLayer e : excavationLayers) {
+            if (!e.autoGeometry || e.layerIndex < 0 || e.layerIndex + 1 >= heightList.length) {
+                continue;
+            }
+            double bottom = heightList[e.layerIndex + 1];
+            double height = e.overallHeight > 0
+                    ? e.overallHeight
+                    : layers.get(e.layerIndex).thickness;
+            double total = e.cutWidth + e.steps * e.stepDist;
+            if (total <= 0) total = e.cutWidth;
+            double left = (modelLength - total) / 2.0;
+            e.x1 = left;
+            e.x2 = left + total;
+            e.y1 = bottom;
+            e.y2 = bottom + height;
         }
     }
 

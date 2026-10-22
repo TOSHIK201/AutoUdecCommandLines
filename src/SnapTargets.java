@@ -7,11 +7,11 @@ class SnapTargets {
         xs.add(0.0);
         xs.add(ParameterList.modelLength);
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            int idx = e.layerIndex;
-            if (idx < 0 || idx + 1 >= ParameterList.heightList.length) continue;
-            double bottom = Util.excavationBottom(e, idx);
-            double top = bottom + Util.excavationHeight(e, idx);
+            double bottom = Util.excavationBottom(e, 0);
+            double top = bottom + Util.excavationHeight(e, 0);
             if (y < bottom - tol || y > top + tol) continue;
+            xs.add(Math.min(e.x1, e.x2));
+            xs.add(Math.max(e.x1, e.x2));
             xs.addAll(Util.calculateExcavationXList(e));
         }
         return xs;
@@ -20,17 +20,10 @@ class SnapTargets {
     static List<Double> yTargets(double x, double tol) {
         List<Double> ys = new ArrayList<>(ParameterList.heights());
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            int idx = e.layerIndex;
-            if (idx < 0 || idx + 1 >= ParameterList.heightList.length) continue;
-            double bottom = Util.excavationBottom(e, idx);
-            double top = bottom + Util.excavationHeight(e, idx);
-            List<Double> xs = Util.calculateExcavationXList(e);
-            double xMin = xs.get(0);
-            double xMax = xs.get(0);
-            for (double cx : xs) {
-                xMin = Math.min(xMin, cx);
-                xMax = Math.max(xMax, cx);
-            }
+            double bottom = Util.excavationBottom(e, 0);
+            double top = bottom + Util.excavationHeight(e, 0);
+            double xMin = Math.min(e.x1, e.x2);
+            double xMax = Math.max(e.x1, e.x2);
             if (x < xMin - tol || x > xMax + tol) continue;
             ys.add(bottom);
             ys.add(top);

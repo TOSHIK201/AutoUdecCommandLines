@@ -31,22 +31,21 @@ public class Step1 {
             writer.write("\n");
 
             List<ExcavationLayer> excavation = new ArrayList<>(ParameterList.excavationLayers);
-            excavation.sort((a, b) -> Integer.compare(b.layerIndex, a.layerIndex));
             for (ExcavationLayer e : excavation) {
-                int idx = Math.max(0, Math.min(e.layerIndex, ParameterList.heightList.length - 2));
                 List<Double> X = Util.calculateExcavationXList(e);
-                double bottom = Util.excavationBottom(e, idx);
-                double top = bottom + Util.excavationHeight(e, idx);
+                double bottom = Util.excavationBottom(e, 0);
+                double top = bottom + Util.excavationHeight(e, 0);
                 writeBoundaryCracks(writer, X, bottom, top);
                 writer.write(Util.generateVerticalCracks(X, bottom, top));
                 writer.write("\n");
             }
             for (ExcavationLayer e : excavation) {
-                int idx = Math.max(0, Math.min(e.layerIndex, ParameterList.heightList.length - 2));
                 List<Double> X = Util.calculateExcavationXList(e);
-                double bottom = Util.excavationBottom(e, idx);
-                double top = bottom + Util.excavationHeight(e, idx);
-                writer.write(Util.generateGroupCommands(X, bottom, top, e.name));
+                double bottom = Util.excavationBottom(e, 0);
+                double top = bottom + Util.excavationHeight(e, 0);
+                if (X.size() >= 2) {
+                    writer.write(Util.generateGroupCommands(X, bottom, top, e.name));
+                }
             }
             writer.write("\n");
 
@@ -55,10 +54,11 @@ public class Step1 {
             writer.write(Util.generateJsetsFromLayers(ParameterList.heightList, ParameterList.layerJoints, ParameterList.modelLength));
 
             writer.write("save " + ParameterList.outputPath + "/dat/step_1.dat\n");
-            writer.write("set output " + ParameterList.outputPath + "/output/step_1.jpg\n");
-            writer.write("set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n");
-            writer.write("plot block\n");
-            writer.write("copy\n");
+            for (PlotPreset preset : ParameterList.plotPresets1) {
+                if (preset.selected && preset.histCommand == null) {
+                    writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
+                }
+            }
 
             if (callNext) {
                 writer.write("\n");

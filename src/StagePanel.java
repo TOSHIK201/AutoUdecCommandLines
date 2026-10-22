@@ -7,11 +7,12 @@ import java.util.function.IntConsumer;
 public class StagePanel extends JPanel {
     private final LayerCanvas canvas;
     private JCheckBox call2, call3;
+    private final JTabbedPane tabs = new JTabbedPane();
+    private JTabbedPane subStage1;
 
     public StagePanel(PropertyPanel propertyPanel, LayerCanvas canvas) {
         this.canvas = canvas;
         setLayout(new BorderLayout());
-        JTabbedPane tabs = new JTabbedPane();
         tabs.addTab("阶段1 岩层", buildStage1(propertyPanel));
         tabs.addTab("阶段2 节理", buildStage2(propertyPanel));
         tabs.addTab("阶段3 边界", buildStage3());
@@ -20,6 +21,24 @@ public class StagePanel extends JPanel {
             if (i == 0 || i == 1) propertyPanel.bindData(canvas.getSelectedIndex());
         });
         add(tabs, BorderLayout.CENTER);
+    }
+
+    public int getSelectedTab() {
+        return tabs.getSelectedIndex();
+    }
+
+    public void setSelectedTab(int index) {
+        if (index >= 0 && index < tabs.getTabCount()) tabs.setSelectedIndex(index);
+    }
+
+    public int getSelectedSubTab() {
+        return subStage1 == null ? 0 : subStage1.getSelectedIndex();
+    }
+
+    public void setSelectedSubTab(int index) {
+        if (subStage1 != null && index >= 0 && index < subStage1.getTabCount()) {
+            subStage1.setSelectedIndex(index);
+        }
     }
 
     public void setAutoRun(boolean auto) {
@@ -51,23 +70,27 @@ public class StagePanel extends JPanel {
         bindString(fTitle, v -> ParameterList.step1Title = v);
         top.add(modelRow, BorderLayout.NORTH);
 
-        JLabel hint = new JLabel("选中岩层后到“开挖属性”勾选“设为开挖煤层”；开挖层显示为黑色");
+        JLabel hint = new JLabel("开挖属性可独立新建；“设为开挖煤层”用选中岩层中部快速建立");
         hint.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
         top.add(hint, BorderLayout.SOUTH);
 
         panel.add(top, BorderLayout.NORTH);
 
-        JTabbedPane sub = new JTabbedPane();
-        sub.addTab("岩层属性", new JScrollPane(propertyPanel.getRockPanel()));
+        subStage1 = new JTabbedPane();
+        subStage1.addTab("岩层属性", new JScrollPane(propertyPanel.getRockPanel()));
         ExcavationPropertyPanel exPanel = new ExcavationPropertyPanel(canvas);
-        sub.addTab("开挖属性", exPanel);
-        sub.addChangeListener(e -> {
-            if (sub.getSelectedIndex() == 1) exPanel.bindToLayer(canvas.getSelectedIndex());
+        subStage1.addTab("开挖属性", exPanel);
+        subStage1.addChangeListener(e -> {
+            if (subStage1.getSelectedIndex() == 1) exPanel.reload();
         });
-        panel.add(sub, BorderLayout.CENTER);
+        panel.add(subStage1, BorderLayout.CENTER);
 
-        panel.add(bottomBar("自动调用阶段2", ParameterList.s1Calls2, v -> ParameterList.s1Calls2 = v,
+        JPanel south = new JPanel(new BorderLayout());
+        south.add(new StagePlotPanel("阶段1绘图", ParameterList.plotPresets1, false, canvas::repaint),
+                BorderLayout.NORTH);
+        south.add(bottomBar("自动调用阶段2", ParameterList.s1Calls2, v -> ParameterList.s1Calls2 = v,
                 "生成阶段1", Main::generateStep1), BorderLayout.SOUTH);
+        panel.add(south, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -80,24 +103,18 @@ public class StagePanel extends JPanel {
         bindString(fTitle, v -> ParameterList.step2Title = v);
         panel.add(top, BorderLayout.NORTH);
         panel.add(propertyPanel.getJointPanel(), BorderLayout.CENTER);
-        panel.add(bottomBar("自动调用阶段3", ParameterList.s2Calls3, v -> ParameterList.s2Calls3 = v,
+        JPanel south = new JPanel(new BorderLayout());
+        south.add(new StagePlotPanel("阶段2绘图", ParameterList.plotPresets2, false, canvas::repaint),
+                BorderLayout.NORTH);
+        south.add(bottomBar("自动调用阶段3", ParameterList.s2Calls3, v -> ParameterList.s2Calls3 = v,
                 "生成阶段2", Main::generateStep2), BorderLayout.SOUTH);
+        panel.add(south, BorderLayout.SOUTH);
         return panel;
     }
 
     private JPanel buildStage3() {
         JPanel panel = new JPanel(new BorderLayout());
-        JPanel form = new JPanel(new GridBagLayout());
-        GridBagConstraints c = grid();
-        JTextField fGravity = new JTextField(String.valueOf(ParameterList.gravity), 6);
-        JTextField fTol = new JTextField(String.valueOf(ParameterList.boundTol), 6);
-        addRow(form, c, 0, "重力加速度", fGravity, 95);
-        addRow(form, c, 1, "边界容差(m)", fTol, 95);
-        bindDouble(fGravity, v -> ParameterList.gravity = v);
-        bindDouble(fTol, v -> ParameterList.boundTol = v);
-        panel.add(form, BorderLayout.NORTH);
-
-        panel.add(new PlotPresetPanel(), BorderLayout.CENTER);
+        panel.add(new BoundaryPanel(canvas), BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
         bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
@@ -108,7 +125,11 @@ public class StagePanel extends JPanel {
         genAll.addActionListener(e -> Main.generateAllFilesAndRun());
         bottom.add(gen3);
         bottom.add(genAll);
-        panel.add(bottom, BorderLayout.SOUTH);
+        JPanel south = new JPanel(new BorderLayout());
+        south.add(new StagePlotPanel("阶段3绘图", ParameterList.plotPresets3, true, canvas::repaint),
+                BorderLayout.NORTH);
+        south.add(bottom, BorderLayout.SOUTH);
+        panel.add(south, BorderLayout.SOUTH);
         return panel;
     }
 
@@ -120,7 +141,10 @@ public class StagePanel extends JPanel {
         check.setToolTipText("生成后在文件末尾调用下一阶段");
         if (checkText.contains("阶段2")) call2 = check;
         if (checkText.contains("阶段3")) call3 = check;
-        check.addActionListener(e -> setter.accept(check.isSelected()));
+        check.addActionListener(e -> {
+            UndoManager.push();
+            setter.accept(check.isSelected());
+        });
         JButton button = new JButton(buttonText);
         button.setToolTipText("生成当前阶段的 UDEC 命令文件");
         button.addActionListener(e -> action.run());
@@ -162,6 +186,7 @@ public class StagePanel extends JPanel {
         try {
             String text = field.getText().trim();
             if (!text.isEmpty()) {
+                UndoManager.push();
                 setter.accept(Double.parseDouble(text));
                 if (canvas != null) canvas.repaint();
             }
@@ -179,6 +204,7 @@ public class StagePanel extends JPanel {
         try {
             String text = field.getText().trim();
             if (!text.isEmpty()) {
+                UndoManager.push();
                 setter.accept(Integer.parseInt(text));
                 if (canvas != null) canvas.repaint();
             }
@@ -195,6 +221,9 @@ public class StagePanel extends JPanel {
 
     private void saveString(JTextField field, Consumer<String> setter) {
         String text = field.getText().trim();
-        if (!text.isEmpty()) setter.accept(text);
+        if (!text.isEmpty()) {
+            UndoManager.push();
+            setter.accept(text);
+        }
     }
 }

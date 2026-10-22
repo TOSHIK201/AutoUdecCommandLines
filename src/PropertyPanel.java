@@ -127,6 +127,7 @@ public class PropertyPanel extends JPanel {
         String text = field.getText().trim();
         if (text.isEmpty()) return;
         try {
+            UndoManager.push();
             if ("name".equals(type)) {
                 layer.name = text;
             } else {
@@ -175,6 +176,7 @@ public class PropertyPanel extends JPanel {
         try {
             double v = Double.parseDouble(field.getText().trim());
             LayerData layer = ParameterList.layers.get(currentIndex);
+            UndoManager.push();
             switch (type) {
                 case "jkn": layer.jkn = v; break;
                 case "jks": layer.jks = v; break;
@@ -194,6 +196,7 @@ public class PropertyPanel extends JPanel {
         LayerData layer = ParameterList.layers.get(currentIndex);
         Color color = JColorChooser.showDialog(this, "选择岩层颜色", layer.color);
         if (color != null) {
+            UndoManager.push();
             layer.color = color;
             colorBtn.setBackground(color);
             if (canvas != null) canvas.repaint();
@@ -205,12 +208,17 @@ public class PropertyPanel extends JPanel {
         LayerData layer = ParameterList.layers.get(currentIndex);
         List<Double> hs = ParameterList.heights();
         double bottom = hs.get(currentIndex + 1);
+        UndoManager.push();
         layer.joints.add(new JointSet(ParameterList.jointAngle, ParameterList.jointStartX, bottom));
         refreshGroups();
         if (canvas != null) canvas.repaint();
     }
 
     private void refreshGroups() {
+        UndoManager.suspend(this::refreshGroupsInternal);
+    }
+
+    private void refreshGroupsInternal() {
         groupContainer.removeAll();
         if (currentIndex < 0 || currentIndex >= ParameterList.layerCount()) {
             groupContainer.revalidate();
@@ -225,6 +233,7 @@ public class PropertyPanel extends JPanel {
                     JOptionPane.showMessageDialog(this, "至少保留一组节理");
                     return;
                 }
+                UndoManager.push();
                 joints.remove(target);
                 refreshGroups();
                 if (canvas != null) canvas.repaint();
@@ -272,6 +281,10 @@ public class PropertyPanel extends JPanel {
     }
 
     public void bindData(int index) {
+        UndoManager.suspend(() -> bindDataInternal(index));
+    }
+
+    private void bindDataInternal(int index) {
         currentIndex = index;
         if (index < 0 || index >= ParameterList.layerCount()) return;
         LayerData layer = ParameterList.layers.get(index);

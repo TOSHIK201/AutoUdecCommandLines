@@ -20,6 +20,7 @@ public class JointGroupPanel extends JPanel {
         link.setSelected(js.baseGroup || js.linkSpacing);
         link.setEnabled(!js.baseGroup);
         link.addActionListener(e -> {
+            UndoManager.push();
             js.linkSpacing = link.isSelected();
             onLinkToggled.accept(js);
         });
@@ -74,6 +75,7 @@ public class JointGroupPanel extends JPanel {
             try {
                 String text = field.getText().trim();
                 if (text.isEmpty()) return;
+                UndoManager.push();
                 setter.accept(Double.parseDouble(text));
                 if (canvas != null) canvas.repaint();
             } catch (NumberFormatException ignored) {
