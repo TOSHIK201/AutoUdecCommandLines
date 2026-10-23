@@ -88,9 +88,20 @@ public class Step4 {
 
     private static void writeExcavate(BufferedWriter writer, Stage4Action action) throws IOException {
         if (action.group == null || action.group.trim().isEmpty()) return;
+        writeCableDelete(writer, action.group.trim());
         writer.write("delete range group " + action.group.trim() + "\n");
         if (action.solve) writer.write("solve\n");
         writer.write("\n");
+    }
+
+    // 开挖前先删除落在该区域内的锚杆，避免块体删除后留下悬空索单元
+    private static void writeCableDelete(BufferedWriter writer, String group) throws IOException {
+        if (ParameterList.boltGroups.isEmpty()) return;
+        double[] r = Stage4Geometry.range(group);
+        if (r == null) return;
+        writer.write(String.format(java.util.Locale.ROOT,
+                "cable delete range %.2f %.2f %.2f %.2f\n",
+                r[0], r[1], r[2], r[3]));
     }
 
     private static void writeMaterial(BufferedWriter writer, Stage4Action action) throws IOException {

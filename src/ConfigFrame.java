@@ -92,6 +92,9 @@ public class ConfigFrame extends JFrame {
         JButton undo = new JButton("撤销");
         undo.setToolTipText("撤销上一步编辑（Ctrl+Z）");
         undo.addActionListener(e -> undoProject());
+        JButton config = new JButton("参数文件");
+        config.setToolTipText("打开 defaults.properties，修改默认参数后重启生效");
+        config.addActionListener(e -> AppConfig.openConfig(this));
         JButton add = new JButton("+ 新建岩层");
         add.setToolTipText("在模型顶部新增一层岩层");
         add.addActionListener(e -> addLayer());
@@ -108,6 +111,7 @@ public class ConfigFrame extends JFrame {
         top.add(load);
         top.add(save);
         top.add(undo);
+        top.add(config);
 
         JPanel global = new JPanel(new BorderLayout());
         global.setBorder(BorderFactory.createTitledBorder("全局输出"));

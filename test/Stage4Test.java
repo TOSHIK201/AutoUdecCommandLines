@@ -62,7 +62,11 @@ public class Stage4Test {
         System.out.println(text);
 
         check("initial opening", text.contains("delete range group openOffCut_9"));
-        check("cable commands", text.split("\ncable ", -1).length - 1 == 8);
+        int cableCount = 0;
+        for (String line : text.split("\n")) {
+            if (line.startsWith("cable ") && !line.startsWith("cable delete")) cableCount++;
+        }
+        check("cable commands", cableCount == 8);
         check("angled bolt", text.contains("cable 56.5000 26.4000 54.1818 27.0212"));
         check("cable props", text.contains("prop mat 11 cb_ymod")
                 && text.contains("prop mat 12 cb_kbond"));

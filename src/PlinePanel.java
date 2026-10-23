@@ -71,7 +71,7 @@ public class PlinePanel extends JPanel {
 
     private Pline newFromForm() {
         Pline p = new Pline();
-        p.points = (int) parse(points.getText(), 200);
+        p.points = (int) parse(points.getText(), ParameterList.plinePoints);
         return p;
     }
 
@@ -127,7 +127,7 @@ public class PlinePanel extends JPanel {
     private void clearForm() {
         binding = true;
         x1.setText(""); y1.setText(""); x2.setText(""); y2.setText("");
-        points.setText("200");
+        points.setText(String.valueOf(ParameterList.plinePoints));
         binding = false;
     }
 

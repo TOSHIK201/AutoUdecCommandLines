@@ -55,6 +55,7 @@ public class LayerCanvas extends JPanel {
     private int selectedBoltGroup = -1;
     private int[] selectedBoltIndices = new int[0];
     private int activeStage = 0;
+    private String stage4Group;
     private boolean dragging;
 
     private static final Color BG = new Color(42, 47, 56);
@@ -580,6 +581,7 @@ public class LayerCanvas extends JPanel {
     public void setActiveStage(int stage) {
         activeStage = stage;
         if (stage != 3) {
+            stage4Group = null;
             boltToggle.setSelected(false);
             plineToggle.setSelected(false);
             boltX1 = null;
@@ -593,6 +595,11 @@ public class LayerCanvas extends JPanel {
             excavationToggle.setSelected(false);
             excStartX = null;
         }
+        repaint();
+    }
+
+    public void setStage4Group(String group) {
+        stage4Group = group;
         repaint();
     }
 
@@ -767,6 +774,9 @@ public class LayerCanvas extends JPanel {
         drawCracks(g2, hs);
         drawBoundaries(g2);
         drawExcavations(g2);
+        if (activeStage == 3 && stage4Group != null) {
+            Stage4Overlay.draw(g2, stage4Group, this::toScreenX, this::toScreenY, getWidth());
+        }
         drawBolts(g2);
         drawPlines(g2);
         if (gridToggle.isSelected()) drawGrid(g2);

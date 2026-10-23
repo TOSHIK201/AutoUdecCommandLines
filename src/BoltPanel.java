@@ -306,8 +306,12 @@ public class BoltPanel extends JPanel {
     private void clearGroupForm() {
         binding = true;
         x1.setText(""); y1.setText(""); x2.setText(""); y2.setText("");
-        spacing.setText("1.0"); count.setText("5"); length.setText("2.4"); nodes.setText("12");
-        area.setText("1.8e-04"); preten.setText("8.0e+04");
+        spacing.setText(fmt(ParameterList.boltSpacing));
+        count.setText(String.valueOf(ParameterList.boltCount));
+        length.setText(fmt(ParameterList.boltLength));
+        nodes.setText(String.valueOf(ParameterList.boltNodes));
+        area.setText(String.format(java.util.Locale.ROOT, "%.2e", ParameterList.boltArea));
+        preten.setText(String.format(java.util.Locale.ROOT, "%.1e", ParameterList.boltPretension));
         gapLabel.setText("—");
         refreshMaterialBoxes();
         cableMat.setSelectedItem(ParameterList.cableMaterial());

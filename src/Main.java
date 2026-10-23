@@ -138,6 +138,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        AppConfig.ensureTemplate();
+        AppConfig.apply();
         SwingUtilities.invokeLater(() -> new ConfigFrame().setVisible(true));
     }
 }

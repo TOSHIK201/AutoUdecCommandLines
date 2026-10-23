@@ -8,6 +8,7 @@ public class Stage4Panel extends JPanel {
     private final CardLayout cards = new CardLayout();
     private final JPanel detail = new JPanel(cards);
     private final JComboBox<String> group = new JComboBox<>();
+    private final JLabel regionLabel = new JLabel("未选择开挖区域");
     private final JCheckBox solve = new JCheckBox("该步后解算", true);
     private final JTextField saveName = new JTextField(12);
     private final JTextField plotName = new JTextField(12);
@@ -104,14 +105,29 @@ public class Stage4Panel extends JPanel {
         c.gridy = 0; c.gridx = 0; c.gridwidth = 2;
         panel.add(actionLabel, c);
         c.gridwidth = 1;
-        c.gridy = 1; c.gridx = 0; panel.add(new JLabel("开挖分组"), c);
+        c.gridy = 1; c.gridx = 0; panel.add(new JLabel("开挖区域"), c);
         c.gridx = 1; group.setEditable(true);
         group.setPreferredSize(new Dimension(240, 22));
+        group.setRenderer(new DefaultListCellRenderer() {
+            @Override public Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean selected, boolean focused) {
+                super.getListCellRendererComponent(list, value, index, selected, focused);
+                if (value != null) {
+                    setText(Stage4Geometry.label(String.valueOf(value)) + "（" + value + "）");
+                }
+                return this;
+            }
+        });
+        group.addActionListener(e -> { if (!binding) updateRegion(); });
         panel.add(group, c);
-        c.gridy = 2; c.gridx = 1; panel.add(solve, c);
+        c.gridy = 2; c.gridx = 0; panel.add(new JLabel("区域范围"), c);
+        c.gridx = 1;
+        regionLabel.setForeground(new Color(0, 102, 204));
+        panel.add(regionLabel, c);
+        c.gridy = 3; c.gridx = 1; panel.add(solve, c);
         JButton apply = new JButton("应用");
         apply.addActionListener(e -> applyExcavate());
-        c.gridy = 3; c.gridx = 1; panel.add(apply, c);
+        c.gridy = 4; c.gridx = 1; panel.add(apply, c);
         return panel;
     }
 
@@ -228,8 +244,10 @@ public class Stage4Panel extends JPanel {
         if (a == null) {
             cards.show(detail, "solve");
             actionLabel.setText("未选择动作");
+            canvas.setStage4Group(null);
             return;
         }
+        canvas.setStage4Group(null);
         switch (a.type) {
             case BOLT:
                 bolts.reload();
@@ -272,6 +290,14 @@ public class Stage4Panel extends JPanel {
         solve.setSelected(a.solve);
         if (a.group != null) group.setSelectedItem(a.group);
         binding = false;
+        updateRegion();
+    }
+
+    private void updateRegion() {
+        Object value = group.getEditor().getItem();
+        String name = value == null ? "" : String.valueOf(value).trim();
+        regionLabel.setText(name.isEmpty() ? "未选择开挖区域" : Stage4Geometry.describe(name));
+        canvas.setStage4Group(name.isEmpty() ? null : name);
     }
 
     private void bindMaterial(Stage4Action a) {
@@ -619,8 +645,10 @@ public class Stage4Panel extends JPanel {
     private java.util.List<String> availableGroups() {
         java.util.List<String> names = new java.util.ArrayList<>();
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            names.add("openOffCut_" + e.name);
-            for (int i = 1; i <= e.stepCount(); i++) {
+            java.util.List<Double> xs = Util.calculateExcavationXList(e);
+            if (xs.size() < 2) continue;
+            names.add(Stage4Geometry.openGroup(e));
+            for (int i = 1; i < xs.size() - 1; i++) {
                 names.add("state_" + i + "_" + e.name);
             }
         }

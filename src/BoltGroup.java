@@ -4,15 +4,15 @@ import java.util.List;
 public class BoltGroup {
     public String name;
     public double x1, y1, x2, y2;
-    public int count = 5;
-    public double spacing = 1.0;
+    public int count = ParameterList.boltCount;
+    public double spacing = ParameterList.boltSpacing;
     public double endOffset = 0.0;
-    public double length = 2.4;
-    public int nodes = 12;
+    public double length = ParameterList.boltLength;
+    public int nodes = ParameterList.boltNodes;
     public int cableMat;
     public int groutMat;
-    public double area = 1.8e-4;
-    public double pretension = 8e4;
+    public double area = ParameterList.boltArea;
+    public double pretension = ParameterList.boltPretension;
     public double baseAngle;
     public final List<Bolt> bolts = new ArrayList<>();
 

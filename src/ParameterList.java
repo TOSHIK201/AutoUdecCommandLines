@@ -67,6 +67,15 @@ class ParameterList {
     public static double groutKbond = 36e6;
     public static double groutSbond = 16e6;
 
+    // 新建锚杆组与测线的默认值（可由 defaults.properties 覆盖）
+    public static int boltCount = 5;
+    public static double boltSpacing = 1.0;
+    public static double boltLength = 2.4;
+    public static int boltNodes = 12;
+    public static double boltArea = 1.8e-4;
+    public static double boltPretension = 8e4;
+    public static int plinePoints = 200;
+
     // 煤层在 layers 中的下标（从上往下，0 开始）
     public static int coal9Layer = 6;
     public static int coal10Layer = 8;

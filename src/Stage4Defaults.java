@@ -3,7 +3,8 @@ class Stage4Defaults {
         if (ParameterList.boltGroups.isEmpty()) addBolts();
         if (ParameterList.plines.isEmpty()) {
             Pline p = new Pline();
-            p.x1 = 0; p.y1 = 38.75; p.x2 = 150; p.y2 = 38.75; p.points = 200;
+            p.x1 = 0; p.y1 = 38.75; p.x2 = 150; p.y2 = 38.75;
+            p.points = ParameterList.plinePoints;
             ParameterList.plines.add(p);
         }
         selectPlots();
