@@ -24,7 +24,8 @@ public class Main {
     public static void generateStep3() {
         ensureDirs();
         ParameterList.syncFromLayers();
-        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", ParameterList.s3Calls4);
+        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", true);
+        Step4.step4(ParameterList.outputPath + "/code/step_4.txt");
     }
 
     public static void generateStep4() {
@@ -42,8 +43,9 @@ public class Main {
         }
         Step1.step1(ParameterList.outputPath + "/code/step_1.txt", ParameterList.s1Calls2);
         Step2.step2(ParameterList.outputPath + "/code/step_2.txt", ParameterList.s2Calls3);
-        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", ParameterList.s3Calls4);
-        System.out.println("生成完毕（阶段1-3）：" + ParameterList.outputPath);
+        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", true);
+        Step4.step4(ParameterList.outputPath + "/code/step_4.txt");
+        System.out.println("生成完毕（阶段1-4）：" + ParameterList.outputPath);
     }
 
     public static void generateAllFilesAndRun() {

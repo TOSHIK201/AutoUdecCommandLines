@@ -3,6 +3,8 @@ import java.util.List;
 import java.util.function.DoubleToIntFunction;
 
 class BoundaryOverlay {
+    private static final Font FONT = new Font("微软雅黑", Font.PLAIN, 11);
+
     static int hit(List<BoundaryCondition> list, double wx, double wy, double tol) {
         for (int i = list.size() - 1; i >= 0; i--) {
             if (list.get(i).hit(wx, wy, tol)) return i;
@@ -13,7 +15,7 @@ class BoundaryOverlay {
     static void draw(Graphics2D g2, List<BoundaryCondition> list, int selected,
                      DoubleToIntFunction toX, DoubleToIntFunction toY,
                      Double pendingX, Double pendingY, double mouseX, double mouseY) {
-        g2.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        g2.setFont(FONT);
         for (int i = 0; i < list.size(); i++) {
             BoundaryCondition b = list.get(i);
             double[] r = b.range();

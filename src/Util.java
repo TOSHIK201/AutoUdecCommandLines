@@ -430,6 +430,19 @@ public class Util {
                 best = candidate;
             }
         }
+        if (best <= 0) {
+            for (ExcavationLayer e : ParameterList.excavationLayers) {
+                if (!excavationAffectsLayer(e, layerIndex)) continue;
+                double width = Math.abs(e.x2 - e.x1);
+                if (width <= 1e-9) continue;
+                int parts = (int) Math.max(1, Math.round(width / target + 1e-9));
+                double candidate = round2(width / parts);
+                if (candidate >= 0.05 && multiple(ParameterList.modelLength, candidate)) {
+                    best = candidate;
+                    break;
+                }
+            }
+        }
         return best > 0 ? best : target;
     }
 
@@ -450,11 +463,21 @@ public class Util {
 
     public static double excavationPhase(int layerIndex, double spacing) {
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (e.layerIndex != layerIndex) continue;
-            List<Double> xs = calculateExcavationXList(e);
-            if (!xs.isEmpty()) return xs.get(0) % spacing;
+            if (!excavationAffectsLayer(e, layerIndex)) continue;
+            return Math.min(e.x1, e.x2) % spacing;
         }
         return 0.0;
+    }
+
+    // 开挖区域覆盖到的层都要参与节理适配，而不是只适配被标记的煤层。
+    public static boolean excavationAffectsLayer(ExcavationLayer e, int layerIndex) {
+        if (ParameterList.heightList == null || layerIndex < 0
+                || layerIndex + 1 >= ParameterList.heightList.length) return false;
+        double top = ParameterList.heightList[layerIndex];
+        double bottom = ParameterList.heightList[layerIndex + 1];
+        double y1 = Math.min(e.y1, e.y2);
+        double y2 = Math.max(e.y1, e.y2);
+        return y2 >= bottom - 1e-6 && y1 <= top + 1e-6;
     }
 
     public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing,
@@ -526,9 +549,9 @@ public class Util {
 
     private static boolean alignsWithExcavation(int layerIndex, double spacing) {
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (e.layerIndex != layerIndex) continue;
-            List<Double> xs = calculateExcavationXList(e);
-            if (xs.isEmpty() || !multiple(xs.get(0), spacing)) return false;
+            if (!excavationAffectsLayer(e, layerIndex)) continue;
+            double width = Math.abs(e.x2 - e.x1);
+            if (!multiple(width, spacing)) return false;
             if (!multiple(e.cutWidth, spacing) || !multiple(e.stepDist, spacing)) return false;
         }
         return true;
@@ -536,7 +559,7 @@ public class Util {
 
     private static boolean hasExcavation(int layerIndex) {
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (e.layerIndex == layerIndex) return true;
+            if (excavationAffectsLayer(e, layerIndex)) return true;
         }
         return false;
     }

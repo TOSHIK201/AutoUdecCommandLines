@@ -29,6 +29,12 @@ public class ExcavationTest {
         check("snap corner", SnapTargets.nearest(59.9, SnapTargets.xTargets(14, 0.5), 0.5) == 60.0
                 && SnapTargets.nearest(14.1, SnapTargets.yTargets(60, 0.5), 0.5) == 14.0);
 
+        ExcavationLayer overlap = new ExcavationLayer("OVER", 20,
+                ParameterList.heightList[5], 60, ParameterList.heightList[3]);
+        check("joint adapts layer 3", Util.excavationAffectsLayer(overlap, 3));
+        check("joint adapts layer 4", Util.excavationAffectsLayer(overlap, 4));
+        check("joint not layer 0", !Util.excavationAffectsLayer(overlap, 0));
+
         Path dir = Paths.get("test_out");
         Files.createDirectories(dir);
         Path step1 = dir.resolve("step_1_exc.txt");

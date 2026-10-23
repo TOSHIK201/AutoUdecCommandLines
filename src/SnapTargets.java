@@ -6,6 +6,14 @@ class SnapTargets {
         List<Double> xs = new ArrayList<>();
         xs.add(0.0);
         xs.add(ParameterList.modelLength);
+        for (BoltGroup g : ParameterList.boltGroups) {
+            addX(xs, g.x1, g.y1, y, tol);
+            addX(xs, g.x2, g.y2, y, tol);
+            for (Bolt b : g.bolts) {
+                addX(xs, b.sx, b.sy, y, tol);
+                addX(xs, b.ex(), b.ey(), y, tol);
+            }
+        }
         for (ExcavationLayer e : ParameterList.excavationLayers) {
             double bottom = Util.excavationBottom(e, 0);
             double top = bottom + Util.excavationHeight(e, 0);
@@ -19,6 +27,14 @@ class SnapTargets {
 
     static List<Double> yTargets(double x, double tol) {
         List<Double> ys = new ArrayList<>(ParameterList.heights());
+        for (BoltGroup g : ParameterList.boltGroups) {
+            addY(ys, g.x1, g.y1, x, tol);
+            addY(ys, g.x2, g.y2, x, tol);
+            for (Bolt b : g.bolts) {
+                addY(ys, b.sx, b.sy, x, tol);
+                addY(ys, b.ex(), b.ey(), x, tol);
+            }
+        }
         for (ExcavationLayer e : ParameterList.excavationLayers) {
             double bottom = Util.excavationBottom(e, 0);
             double top = bottom + Util.excavationHeight(e, 0);
@@ -42,5 +58,13 @@ class SnapTargets {
             }
         }
         return best;
+    }
+
+    private static void addX(List<Double> xs, double px, double py, double y, double tol) {
+        if (Math.abs(py - y) <= tol) xs.add(px);
+    }
+
+    private static void addY(List<Double> ys, double px, double py, double x, double tol) {
+        if (Math.abs(px - x) <= tol) ys.add(py);
     }
 }

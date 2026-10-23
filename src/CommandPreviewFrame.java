@@ -8,6 +8,7 @@ public class CommandPreviewFrame extends JFrame {
     private final JTextArea area1 = area();
     private final JTextArea area2 = area();
     private final JTextArea area3 = area();
+    private final JTextArea area4 = area();
 
     public CommandPreviewFrame() {
         setTitle("生成命令预览");
@@ -19,6 +20,7 @@ public class CommandPreviewFrame extends JFrame {
         tabs.addTab("step_1.txt", new JScrollPane(area1));
         tabs.addTab("step_2.txt", new JScrollPane(area2));
         tabs.addTab("step_3.txt", new JScrollPane(area3));
+        tabs.addTab("step_4.txt", new JScrollPane(area4));
         add(tabs, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -42,6 +44,7 @@ public class CommandPreviewFrame extends JFrame {
             area1.setText(read("step_1.txt"));
             area2.setText(read("step_2.txt"));
             area3.setText(read("step_3.txt"));
+            area4.setText(read("step_4.txt"));
         } catch (Exception e) {
             area1.setText("生成或读取失败：\n" + e);
         }

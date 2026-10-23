@@ -48,14 +48,15 @@ public class BoundaryGenTest {
         String s1 = new String(Files.readAllBytes(step1), Charset.forName("GBK"));
         String s2 = new String(Files.readAllBytes(step2), Charset.forName("GBK"));
         check("step1 plot", s1.contains("output/step_1_5.jpg"));
-        check("step2 plot", s2.contains("output/step_2_6.jpg"));
+        check("step2 mesh plot", s2.contains("output/step_2_6.jpg"));
+        check("step2 material plot", s2.contains("output/step_2_7.jpg"));
 
         byte[] saved = ProjectIO.toBytes();
         ParameterList.boundaries.clear();
         ParameterList.plotPresets1.clear();
         ProjectIO.loadBytes(saved);
         check("boundary reload", ParameterList.boundaries.size() == 6);
-        check("stage1 preset reload", ParameterList.plotPresets1.size() == 13);
+        check("stage1 preset reload", ParameterList.plotPresets1.size() == 14);
 
         System.out.println("ALL TESTS PASSED");
     }

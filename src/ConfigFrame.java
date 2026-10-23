@@ -205,8 +205,8 @@ public class ConfigFrame extends JFrame {
         open.addActionListener(e -> openOutputFolder());
         row2.add(open);
 
-        JButton genAll = new JButton("生成全部（1-3）");
-        genAll.setToolTipText("生成阶段1-3；勾选自动调用时启动 UDEC");
+        JButton genAll = new JButton("生成全部（1-4）");
+        genAll.setToolTipText("生成阶段1-4；勾选自动调用时从 step_1 链式运行到 step_4");
         genAll.addActionListener(e -> Main.generateAllFilesAndRun());
         row2.add(genAll);
 

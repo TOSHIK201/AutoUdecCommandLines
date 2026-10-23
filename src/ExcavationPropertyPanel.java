@@ -6,7 +6,7 @@ public class ExcavationPropertyPanel extends JPanel {
     private final DefaultListModel<ExcavationLayer> model = new DefaultListModel<>();
     private final JList<ExcavationLayer> list = new JList<>(model);
     private final ExcavationFormPanel form;
-    private final JCheckBox coalShortcut = new JCheckBox("设为开挖煤层（快捷）");
+    private final JButton coalButton = new JButton("设为开挖煤层");
     private final JToggleButton mode = new JToggleButton("框选开挖");
     private final JLabel status = new JLabel();
     private boolean binding;
@@ -36,11 +36,11 @@ public class ExcavationPropertyPanel extends JPanel {
         });
         JButton delete = new JButton("删除选中");
         delete.addActionListener(e -> deleteSelected());
-        coalShortcut.setToolTipText("以当前选中岩层的中部快速建立一个居中开挖区域，并把该层标黑");
-        coalShortcut.addActionListener(e -> toggleCoal());
+        coalButton.setToolTipText("以当前选中岩层的中部快速生成一个开挖组");
+        coalButton.addActionListener(e -> quickCoal());
         buttons.add(mode);
         buttons.add(delete);
-        buttons.add(coalShortcut);
+        buttons.add(coalButton);
         top.add(buttons, BorderLayout.NORTH);
         status.setBorder(BorderFactory.createEmptyBorder(2, 6, 4, 6));
         top.add(status, BorderLayout.SOUTH);
@@ -72,7 +72,6 @@ public class ExcavationPropertyPanel extends JPanel {
             mode.setSelected(on);
             mode.setText(on ? "结束框选" : "框选开挖");
         });
-        canvas.addSelectionListener(this::onLayerSelected);
         reload();
     }
 
@@ -84,7 +83,6 @@ public class ExcavationPropertyPanel extends JPanel {
         binding = false;
         if (model.size() > 0) list.setSelectedIndex(Math.max(0, Math.min(keep, model.size() - 1)));
         else form.clearForm();
-        onLayerSelected(canvas.getSelectedIndex());
     }
 
     private void added(ExcavationLayer e) {
@@ -127,35 +125,25 @@ public class ExcavationPropertyPanel extends JPanel {
         }
     }
 
-    private void onLayerSelected(int index) {
-        if (binding) return;
-        boolean linked = find(index) != null;
-        binding = true;
-        coalShortcut.setSelected(linked);
-        binding = false;
-    }
-
-    private void toggleCoal() {
-        if (binding) return;
+    private void quickCoal() {
         int index = canvas.getSelectedIndex();
         if (index < 0 || index >= ParameterList.layerCount()) return;
-        LayerData layer = ParameterList.layers.get(index);
         ExcavationLayer existing = find(index);
-        UndoManager.push();
-        if (coalShortcut.isSelected() && existing == null) {
-            if (layer.savedColor == null) layer.savedColor = layer.color;
-            layer.color = Color.BLACK;
-            ExcavationLayer e = new ExcavationLayer(index, excavationName(layer, index));
-            ParameterList.excavationLayers.add(e);
-            ParameterList.syncFromLayers();
+        if (existing != null) {
             reload();
-            list.setSelectedIndex(model.size() - 1);
-        } else if (!coalShortcut.isSelected() && existing != null) {
-            ParameterList.excavationLayers.remove(existing);
-            restoreColorIfUnlinked(existing);
-            ParameterList.syncFromLayers();
-            reload();
+            list.setSelectedIndex(ParameterList.excavationLayers.indexOf(existing));
+            status.setText("该层已有开挖组，已选中");
+            return;
         }
+        LayerData layer = ParameterList.layers.get(index);
+        UndoManager.push();
+        if (layer.savedColor == null) layer.savedColor = layer.color;
+        layer.color = Color.BLACK;
+        ExcavationLayer e = new ExcavationLayer(index, excavationName(layer, index));
+        ParameterList.excavationLayers.add(e);
+        ParameterList.syncFromLayers();
+        reload();
+        list.setSelectedIndex(model.size() - 1);
         canvas.repaint();
     }
 

@@ -16,8 +16,10 @@ public class StagePanel extends JPanel {
         tabs.addTab("阶段1 岩层", buildStage1(propertyPanel));
         tabs.addTab("阶段2 节理", buildStage2(propertyPanel));
         tabs.addTab("阶段3 边界", buildStage3());
+        tabs.addTab("阶段4 支护/开挖", new Stage4Panel(canvas));
         tabs.addChangeListener(e -> {
             int i = tabs.getSelectedIndex();
+            canvas.setActiveStage(i);
             if (i == 0 || i == 1) propertyPanel.bindData(canvas.getSelectedIndex());
         });
         add(tabs, BorderLayout.CENTER);
@@ -120,11 +122,7 @@ public class StagePanel extends JPanel {
         bottom.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
         JButton gen3 = new JButton("生成阶段3");
         gen3.addActionListener(e -> Main.generateStep3());
-        JButton genAll = new JButton("生成全部（1-3）");
-        genAll.setToolTipText("生成阶段1-3");
-        genAll.addActionListener(e -> Main.generateAllFilesAndRun());
         bottom.add(gen3);
-        bottom.add(genAll);
         JPanel south = new JPanel(new BorderLayout());
         south.add(new StagePlotPanel("阶段3绘图", ParameterList.plotPresets3, true, canvas::repaint),
                 BorderLayout.NORTH);

@@ -7,7 +7,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ProjectIO {
-    private static final String MAGIC = "AUDEC5";
+    private static final String MAGIC = "AUDEC9";
+    private static final String MAGIC_V8 = "AUDEC8";
+    private static final String MAGIC_V7 = "AUDEC7";
+    private static final String MAGIC_V6 = "AUDEC6";
+    private static final String MAGIC_V5 = "AUDEC5";
     private static final String MAGIC_V4 = "AUDEC4";
     private static final String MAGIC_V3 = "AUDEC3";
     private static final String MAGIC_V2 = "AUDEC2";
@@ -40,7 +44,11 @@ public class ProjectIO {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
             String magic = in.readUTF();
             int version;
-            if (MAGIC.equals(magic)) version = 5;
+            if (MAGIC.equals(magic)) version = 9;
+            else if (MAGIC_V8.equals(magic)) version = 8;
+            else if (MAGIC_V7.equals(magic)) version = 7;
+            else if (MAGIC_V6.equals(magic)) version = 6;
+            else if (MAGIC_V5.equals(magic)) version = 5;
             else if (MAGIC_V4.equals(magic)) version = 4;
             else if (MAGIC_V3.equals(magic)) version = 3;
             else if (MAGIC_V2.equals(magic)) version = 2;
@@ -48,9 +56,14 @@ public class ProjectIO {
             else throw new IOException("不是 .audec 工程文件");
             readGlobals(in, version >= 2);
             ProjectDataIO.read(in, version);
-            if (version == 1) {
+            if (version < 6) {
                 ParameterList.ensurePlotPresets();
+            }
+            if (version == 1) {
                 ParameterList.initDefaultBoundaries();
+            }
+            if (version < 6) {
+                Stage4Defaults.ensure();
             }
             ParameterList.syncFromLayers();
         } finally {

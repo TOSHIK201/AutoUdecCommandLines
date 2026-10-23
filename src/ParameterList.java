@@ -15,7 +15,7 @@ class ParameterList {
     // 阶段自动调用开关
     public static boolean s1Calls2 = true;
     public static boolean s2Calls3 = true;
-    public static boolean s3Calls4 = false;
+    public static boolean s3Calls4 = true;
 
     // 输出图片尺寸
     public static int outputWidth = 1920;
@@ -52,6 +52,20 @@ class ParameterList {
     public static final java.util.List<PlotPreset> plotPresets1 = new java.util.ArrayList<>();
     public static final java.util.List<PlotPreset> plotPresets2 = new java.util.ArrayList<>();
     public static final java.util.List<PlotPreset> plotPresets3 = new java.util.ArrayList<>();
+    public static final java.util.List<PlotPreset> plotPresets4 = new java.util.ArrayList<>();
+
+    // 阶段4：锚杆、测线、动作序列、日志
+    public static final List<BoltGroup> boltGroups = new ArrayList<>();
+    public static final List<Pline> plines = new ArrayList<>();
+    public static final List<Stage4Action> stage4Actions = new ArrayList<>();
+    public static final List<LogGroup> logGroups = new ArrayList<>();
+
+    public static double cableYmod = 200e9;
+    public static double cableDensity = 7850;
+    public static double cableYield = 510e6;
+    public static double cableYcomp = 510e6;
+    public static double groutKbond = 36e6;
+    public static double groutSbond = 16e6;
 
     // 煤层在 layers 中的下标（从上往下，0 开始）
     public static int coal9Layer = 6;
@@ -146,14 +160,57 @@ class ParameterList {
         plotPresets1.addAll(PlotPresets.stage1());
         plotPresets2.addAll(PlotPresets.stage2());
         plotPresets3.addAll(PlotPresets.stage3());
+        plotPresets4.addAll(PlotPresets.stage4());
         syncFromLayers();
         initDefaultBoundaries();
+        Stage4Defaults.ensure();
     }
 
     static void ensurePlotPresets() {
         if (plotPresets1.isEmpty()) plotPresets1.addAll(PlotPresets.stage1());
         if (plotPresets2.isEmpty()) plotPresets2.addAll(PlotPresets.stage2());
         if (plotPresets3.isEmpty()) plotPresets3.addAll(PlotPresets.stage3());
+        if (plotPresets4.isEmpty()) plotPresets4.addAll(PlotPresets.stage4());
+    }
+
+    public static int cableMaterial() {
+        // 块体、锚杆、锚固剂共用 mat 材料表；Step2 给岩层分配 1..n。
+        return layers.size() + 1;
+    }
+
+    public static int groutMaterial() {
+        // 节理材料使用独立的 jmat 表，不参与这里的顺延。
+        return layers.size() + 2;
+    }
+
+    public static List<Integer> cableMaterialIds() {
+        java.util.TreeSet<Integer> ids = new java.util.TreeSet<>();
+        for (Stage4Action action : stage4Actions) {
+            if (action.type == Stage4Action.Type.MATERIAL) {
+                ids.add(action.cableMat > 0 ? action.cableMat : cableMaterial());
+            }
+        }
+        for (BoltGroup group : boltGroups) {
+            ids.add(group.cableMat);
+            for (Bolt bolt : group.bolts) ids.add(bolt.cableMat);
+        }
+        if (ids.isEmpty()) ids.add(cableMaterial());
+        return new ArrayList<>(ids);
+    }
+
+    public static List<Integer> groutMaterialIds() {
+        java.util.TreeSet<Integer> ids = new java.util.TreeSet<>();
+        for (Stage4Action action : stage4Actions) {
+            if (action.type == Stage4Action.Type.MATERIAL) {
+                ids.add(action.groutMat > 0 ? action.groutMat : groutMaterial());
+            }
+        }
+        for (BoltGroup group : boltGroups) {
+            ids.add(group.groutMat);
+            for (Bolt bolt : group.bolts) ids.add(bolt.groutMat);
+        }
+        if (ids.isEmpty()) ids.add(groutMaterial());
+        return new ArrayList<>(ids);
     }
 
     static void initDefaultBoundaries() {

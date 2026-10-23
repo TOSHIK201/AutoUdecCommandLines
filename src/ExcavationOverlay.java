@@ -3,6 +3,8 @@ import java.util.List;
 import java.util.function.DoubleToIntFunction;
 
 class ExcavationOverlay {
+    private static final Font FONT = new Font("微软雅黑", Font.PLAIN, 11);
+
     static int hit(List<ExcavationLayer> list, double wx, double wy) {
         for (int i = list.size() - 1; i >= 0; i--) {
             ExcavationLayer e = list.get(i);
@@ -17,7 +19,7 @@ class ExcavationOverlay {
     static void draw(Graphics2D g2, List<ExcavationLayer> list, int selected,
                      DoubleToIntFunction toX, DoubleToIntFunction toY,
                      Double startX, Double startY, double endX, double endY) {
-        g2.setFont(new Font("微软雅黑", Font.PLAIN, 11));
+        g2.setFont(FONT);
         for (int i = 0; i < list.size(); i++) {
             ExcavationLayer e = list.get(i);
             drawRect(g2, toX, toY, e.x1, e.y1, e.x2, e.y2,

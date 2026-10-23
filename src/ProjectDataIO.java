@@ -66,6 +66,7 @@ class ProjectDataIO {
             out.writeUTF(b.name == null ? "" : b.name);
             out.writeUTF(b.edge.name());
         }
+        ProjectStage4IO.write(out);
     }
 
     static void read(DataInputStream in, int version) throws IOException {
@@ -139,10 +140,11 @@ class ProjectDataIO {
         normalizePlotOrder(ParameterList.plotPresets3);
         normalizePlotOrder(ParameterList.plotPresets1);
         normalizePlotOrder(ParameterList.plotPresets2);
+        if (version >= 6) ProjectStage4IO.read(in, version);
         markExcavationColors();
     }
 
-    private static void writePlots(DataOutputStream out, java.util.List<PlotPreset> presets)
+    static void writePlots(DataOutputStream out, java.util.List<PlotPreset> presets)
             throws IOException {
         out.writeInt(presets.size());
         for (PlotPreset p : presets) {
@@ -183,7 +185,7 @@ class ProjectDataIO {
         e.y2 = y + height;
     }
 
-    private static void readPlots(DataInputStream in, java.util.List<PlotPreset> presets,
+    static void readPlots(DataInputStream in, java.util.List<PlotPreset> presets,
                                   int version) throws IOException {
         presets.clear();
         int count = in.readInt();
@@ -205,7 +207,7 @@ class ProjectDataIO {
         return null;
     }
 
-    private static void normalizePlotOrder(java.util.List<PlotPreset> presets) {
+    static void normalizePlotOrder(java.util.List<PlotPreset> presets) {
         boolean missing = false;
         for (PlotPreset preset : presets) {
             if (preset.selected && preset.order <= 0) {
