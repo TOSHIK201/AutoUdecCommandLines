@@ -122,30 +122,34 @@ public class ConfigFrame extends JFrame {
         path.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 String text = path.getText().trim();
-                if (!text.isEmpty()) {
+                if (!text.equals(ParameterList.outputPath)) {
                     UndoManager.push();
                     ParameterList.outputPath = text;
                 }
             }
         });
         row1.add(path);
+        JButton pathBrowse = new JButton("浏览...");
+        pathBrowse.setToolTipText("选择输出目录");
+        pathBrowse.addActionListener(e -> browseOutputFolder(path));
+        row1.add(pathBrowse);
 
-        row1.add(new JLabel("图片宽:"));
+        row1.add(new JLabel("图片宽度:"));
         JTextField width = new JTextField(String.valueOf(ParameterList.outputWidth), 5);
         bindInt(width, v -> ParameterList.outputWidth = v);
         row1.add(width);
 
-        row1.add(new JLabel("图片高:"));
+        row1.add(new JLabel("图片高度:"));
         JTextField height = new JTextField(String.valueOf(ParameterList.outputHeight), 5);
         bindInt(height, v -> ParameterList.outputHeight = v);
         row1.add(height);
 
-        row1.add(new JLabel("圆角数:"));
+        row1.add(new JLabel("圆角长度(m):"));
         JTextField round = new JTextField(String.valueOf(ParameterList.round), 5);
         bindDouble(round, v -> ParameterList.round = v);
         row1.add(round);
 
-        row1.add(new JLabel("嵌入容差:"));
+        row1.add(new JLabel("接触重叠容差:"));
         JTextField ovtol = new JTextField(String.valueOf(ParameterList.ovtol), 5);
         bindDouble(ovtol, v -> ParameterList.ovtol = v);
         row1.add(ovtol);
@@ -156,7 +160,7 @@ public class ConfigFrame extends JFrame {
         exe.addFocusListener(new java.awt.event.FocusAdapter() {
             @Override public void focusLost(java.awt.event.FocusEvent e) {
                 String text = exe.getText().trim();
-                if (!text.isEmpty()) {
+                if (!text.equals(ParameterList.udecExePath)) {
                     UndoManager.push();
                     ParameterList.udecExePath = text;
                 }
@@ -169,7 +173,7 @@ public class ConfigFrame extends JFrame {
         browse.addActionListener(e -> browseUdecExe(exe));
         row2.add(browse);
 
-        JCheckBox autoRun = new JCheckBox("生成后自动调用命令", ParameterList.autoRunAfterGenerate);
+        JCheckBox autoRun = new JCheckBox("生成后自动调用 UDEC", ParameterList.autoRunAfterGenerate);
         autoRun.setToolTipText("生成后从 step_1 开始链式调用 UDEC");
         autoRun.addActionListener(e -> {
             UndoManager.push();
@@ -196,11 +200,11 @@ public class ConfigFrame extends JFrame {
             canvas.repaint();
         });
         row2.add(debug);
-        row2.add(new JLabel("倍数:"));
+        row2.add(new JLabel("调试倍数:"));
         row2.add(debugScale);
 
         JButton preview = new JButton("预览命令");
-        preview.setToolTipText("以 GBK 显示生成的 step_1/2/3 命令");
+        preview.setToolTipText("以 GBK 显示生成的 step_1~4 命令（.dat）");
         preview.addActionListener(e -> new CommandPreviewFrame().setVisible(true));
         row2.add(preview);
 
@@ -276,6 +280,10 @@ public class ConfigFrame extends JFrame {
     }
 
     private void openOutputFolder() {
+        if (ParameterList.outputPath == null || ParameterList.outputPath.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "请先选择输出路径");
+            return;
+        }
         try {
             Path path = Paths.get(ParameterList.outputPath);
             Files.createDirectories(path);
@@ -350,6 +358,20 @@ public class ConfigFrame extends JFrame {
             status.setText("已保存工程：" + file.getName());
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "保存工程失败：\n" + e.getMessage());
+        }
+    }
+
+    private void browseOutputFolder(JTextField field) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle("选择输出目录");
+        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        String current = field.getText().trim();
+        if (!current.isEmpty()) chooser.setCurrentDirectory(new File(current));
+        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            String path = chooser.getSelectedFile().getAbsolutePath();
+            UndoManager.push();
+            field.setText(path);
+            ParameterList.outputPath = path;
         }
     }
 

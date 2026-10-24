@@ -35,11 +35,11 @@ class PlotPresets {
     static List<PlotPreset> stage4() {
         List<PlotPreset> list = build(4);
         list.add(new PlotPreset("块体+锚杆", "plot block white cable blue",
-                false, "块体+锚杆", "step_4_15.jpg"));
+                false, "_block_cable", "step_4_15.jpg"));
         list.add(new PlotPreset("Y应力+块体+锚杆", "plot syy fill block white cable blue",
-                false, "Y应力+块体+锚杆", "step_4_16.jpg"));
+                false, "_syy_block_cable", "step_4_16.jpg"));
         list.add(new PlotPreset("Y位移+块体+锚杆", "plot ydis fill block white cable blue",
-                false, "Y位移+块体+锚杆", "step_4_17.jpg"));
+                false, "_ydis_block_cable", "step_4_17.jpg"));
         return list;
     }
 
@@ -57,10 +57,35 @@ class PlotPresets {
             }
             String label = CATALOG[i][0];
             PlotPreset preset = new PlotPreset(label, CATALOG[i][1], CATALOG[i][2], on,
-                    label, "step_" + stage + "_" + (i + 1) + ".jpg");
+                    titleFor(stage, label), "step_" + stage + "_" + (i + 1) + ".jpg");
             preset.order = on ? ++order : 0;
             list.add(preset);
         }
         return list;
+    }
+
+    private static String titleFor(int stage, String label) {
+        if (stage == 3) return "原岩" + label;
+        return tag(label);
+    }
+
+    private static String tag(String label) {
+        switch (label) {
+            case "最大不平衡力": return "_unbal";
+            case "最大速度": return "_vmax";
+            case "Y方向位移云图": return "_ydis";
+            case "Y方向应力云图": return "_syy";
+            case "块体模型": return "_block";
+            case "单元体模型图": return "_zone";
+            case "材料分布图": return "_mat";
+            case "X方向位移云图": return "_xdis";
+            case "X方向应力云图": return "_sxx";
+            case "剪应力云图": return "_sxy";
+            case "最大主应力云图": return "_sig1";
+            case "最小主应力云图": return "_sig2";
+            case "塑性区图": return "_plastic";
+            case "运算速率": return "_ratio";
+            default: return "_plot";
+        }
     }
 }

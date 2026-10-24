@@ -76,7 +76,7 @@ public class LayerCanvas extends JPanel {
         snapToggle.setForeground(Color.WHITE);
         snapToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         snapToggle.setFocusable(false);
-        snapToggle.setToolTipText("勾选时吸附到层界面、裂隙与模型边界；取消后自由移动");
+        snapToggle.setToolTipText("吸附至层界面、裂隙及模型边界");
         snapToggle.addActionListener(e -> refreshSnap());
         add(snapToggle);
         gridToggle.setOpaque(false);
@@ -90,7 +90,7 @@ public class LayerCanvas extends JPanel {
         measureToggle.setForeground(Color.WHITE);
         measureToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         measureToggle.setFocusable(false);
-        measureToggle.setToolTipText("左键依次点两个点测距；右键清除");
+        measureToggle.setToolTipText("左键选取两点测距，右键清除");
         measureToggle.addActionListener(e -> {
             if (measureToggle.isSelected()) {
                 boundaryToggle.setSelected(false);
@@ -113,7 +113,7 @@ public class LayerCanvas extends JPanel {
         boundaryToggle.setForeground(Color.WHITE);
         boundaryToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         boundaryToggle.setFocusable(false);
-        boundaryToggle.setToolTipText("左键依次点两个点新建边界；右键取消当前点");
+        boundaryToggle.setToolTipText("左键选取两点创建边界，右键取消");
         boundaryToggle.addActionListener(e -> {
             if (boundaryToggle.isSelected()) {
                 measureToggle.setSelected(false);
@@ -132,7 +132,7 @@ public class LayerCanvas extends JPanel {
         excavationToggle.setForeground(Color.WHITE);
         excavationToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         excavationToggle.setFocusable(false);
-        excavationToggle.setToolTipText("在画布上按住左键拖动，框选开挖区域；单击可选择已有区域");
+        excavationToggle.setToolTipText("左键拖拽框选开挖区域；单击选择已有区域");
         excavationToggle.addActionListener(e -> {
             if (excavationToggle.isSelected()) {
                 measureToggle.setSelected(false);
@@ -156,7 +156,7 @@ public class LayerCanvas extends JPanel {
         boltToggle.setForeground(Color.WHITE);
         boltToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         boltToggle.setFocusable(false);
-        boltToggle.setToolTipText("左键依次点两个点定义锚杆安装线");
+        boltToggle.setToolTipText("左键选取两点定义锚杆安装线");
         boltToggle.addActionListener(e -> {
             if (boltToggle.isSelected()) {
                 measureToggle.setSelected(false);
@@ -176,7 +176,7 @@ public class LayerCanvas extends JPanel {
         plineToggle.setForeground(Color.WHITE);
         plineToggle.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         plineToggle.setFocusable(false);
-        plineToggle.setToolTipText("左键依次点两个点定义测线");
+        plineToggle.setToolTipText("左键选取两点定义测线");
         plineToggle.addActionListener(e -> {
             if (plineToggle.isSelected()) {
                 measureToggle.setSelected(false);
@@ -694,7 +694,7 @@ public class LayerCanvas extends JPanel {
             statusLabel.setText(String.format("x = %.2f m%s   y = %.2f m%s   当前第 %d 层%s%s",
                     sxShow, snapX != null ? " [吸附]" : "",
                     syShow, snapY != null ? " [吸附]" : "",
-                    selectedIndex + 1, snapToggle.isSelected() ? "" : "   吸附关",
+                    selectedIndex + 1, snapToggle.isSelected() ? "" : "   吸附已关闭",
                     measureHint() + boundaryHint() + excavationHint()
                             + boltHint() + plineHint()));
         }
@@ -907,7 +907,7 @@ public class LayerCanvas extends JPanel {
 
     private String excavationHint() {
         if (!excavationToggle.isSelected()) return "";
-        if (excStartX == null) return "   开挖：按住左键拖动框选";
+        if (excStartX == null) return "   开挖：拖拽框选";
         return "   开挖：正在框选";
     }
 

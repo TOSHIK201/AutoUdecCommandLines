@@ -188,7 +188,7 @@ public class Stage4Panel extends JPanel {
         c.gridx = 3; logData.setEditable(true);
         logData.setPreferredSize(new Dimension(150, 22)); panel.add(logData, c);
         c.gridy = 2; c.gridx = 0; c.gridwidth = 4;
-        panel.add(new JLabel("测线号留空表示不依赖测线；同名自动加序号"), c);
+        panel.add(new JLabel("测线号可留空；同名文件自动追加序号"), c);
         c.gridwidth = 1;
         JButton apply = new JButton("应用");
         apply.addActionListener(e -> applyLog());
@@ -334,7 +334,7 @@ public class Stage4Panel extends JPanel {
         label.setPreferredSize(new Dimension(110, 20));
         label.setToolTipText(item.command);
         root.add(label);
-        root.add(new JLabel("图头"));
+        root.add(new JLabel("图标题"));
         JTextField title = new JTextField(item.title, 10);
         title.setPreferredSize(new Dimension(95, 22));
         bindPlotField(title, v -> item.title = v, action);
@@ -573,7 +573,7 @@ public class Stage4Panel extends JPanel {
         boolean clearBolts = false;
         if (a.type == Stage4Action.Type.BOLT) {
             int choice = JOptionPane.showConfirmDialog(this,
-                    "是否同时清除所有锚杆组？\n选“否”只删除动作，锚杆数据保留但不再显示。",
+                    "是否同时清除全部锚杆组？\n选择“否”仅删除动作并保留组数据。",
                     "删除锚杆动作", JOptionPane.YES_NO_CANCEL_OPTION);
             if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) return;
             if (choice == JOptionPane.YES_OPTION) {

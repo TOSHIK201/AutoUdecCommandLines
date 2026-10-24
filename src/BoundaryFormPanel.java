@@ -9,7 +9,7 @@ public class BoundaryFormPanel extends JPanel {
     private final JList<BoundaryCondition> list;
     private final DefaultListModel<BoundaryCondition> model;
     private final JComboBox<BoundaryCondition.Type> typeBox =
-            new JComboBox<>(BoundaryCondition.Type.values());
+            new JComboBox<>(BoundaryCondition.uiTypes());
     private final JTextField valueField = new JTextField(6);
     private final JTextField widthField = new JTextField(5);
     private final JTextField sxField = new JTextField(6);
@@ -19,6 +19,7 @@ public class BoundaryFormPanel extends JPanel {
     private final JTextField sxxField = new JTextField(7);
     private final JTextField sxyField = new JTextField(7);
     private final JTextField syyField = new JTextField(7);
+    private final BoundaryGradientPanel gradientPanel = new BoundaryGradientPanel();
     private boolean binding;
 
     public BoundaryFormPanel(LayerCanvas canvas, JList<BoundaryCondition> list,
@@ -30,7 +31,7 @@ public class BoundaryFormPanel extends JPanel {
         setBorder(BorderFactory.createTitledBorder("选中边界"));
 
         GridBagConstraints c = grid();
-        valueField.setToolTipText("速度边界填速度值（与模型单位一致，通常 m/s）；位移边界固定为 0");
+        valueField.setToolTipText("速度边界填速度值（与模型单位一致，通常 m/s）");
         put(c, 0, 0, new JLabel("类型"));
         c.gridwidth = 3;
         put(c, 1, 0, typeBox);
@@ -53,6 +54,9 @@ public class BoundaryFormPanel extends JPanel {
         put(c, 3, 4, sxyField, 80);
         put(c, 0, 5, new JLabel("σyy (Pa)"));
         put(c, 1, 5, syyField, 80);
+        c.gridy = 6; c.gridx = 0; c.gridwidth = 4;
+        add(gradientPanel, c);
+        c.gridwidth = 1;
 
         typeBox.addActionListener(e -> applyType());
         bindDouble(valueField, v -> edit(item -> item.value = v));
@@ -64,6 +68,7 @@ public class BoundaryFormPanel extends JPanel {
         bindDouble(sxxField, v -> edit(item -> item.sxx = v));
         bindDouble(sxyField, v -> edit(item -> item.sxy = v));
         bindDouble(syyField, v -> edit(item -> item.syy = v));
+        gradientPanel.setOnChanged(this::refreshItem);
         updateEnabled(BoundaryCondition.Type.VELOCITY_X);
     }
 
@@ -75,6 +80,7 @@ public class BoundaryFormPanel extends JPanel {
         b.sxx = parse(sxxField.getText(), 0);
         b.sxy = parse(sxyField.getText(), 0);
         b.syy = parse(syyField.getText(), 0);
+        gradientPanel.applyTo(b);
         return b;
     }
 
@@ -95,6 +101,7 @@ public class BoundaryFormPanel extends JPanel {
         sxxField.setText(String.format(Locale.ROOT, "%.4e", b.sxx));
         sxyField.setText(String.format(Locale.ROOT, "%.4e", b.sxy));
         syyField.setText(String.format(Locale.ROOT, "%.4e", b.syy));
+        gradientPanel.bind(b);
         binding = false;
         updateEnabled(b.type);
     }
@@ -110,6 +117,7 @@ public class BoundaryFormPanel extends JPanel {
         sxxField.setText("0.0000e+00");
         sxyField.setText("0.0000e+00");
         syyField.setText("0.0000e+00");
+        gradientPanel.clear();
         binding = false;
         updateEnabled(BoundaryCondition.Type.VELOCITY_X);
     }
@@ -129,6 +137,7 @@ public class BoundaryFormPanel extends JPanel {
         sxxField.setEnabled(type.stress());
         sxyField.setEnabled(type.stress());
         syyField.setEnabled(type.stress());
+        gradientPanel.setStress(type.stress());
     }
 
     private void edit(Consumer<BoundaryCondition> change) {

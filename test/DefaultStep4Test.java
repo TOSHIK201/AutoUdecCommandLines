@@ -19,7 +19,7 @@ public class DefaultStep4Test {
         Path out = dir.resolve("step_4_default.txt");
         Step4.step4(out.toString());
         String text = new String(Files.readAllBytes(out), Charset.forName("GBK"));
-        check("angled cable", text.contains("cable 56.5000 26.4000 55.8788 28.7182"));
+        check("angled cable", text.contains("cable 100.5000 26.4000 99.8788 28.7182"));
         check("initial plot", text.contains("plot block white cable blue"));
         check("cable props", text.contains(
                 "prop mat 11 cb_ymod 2.0e+11 cb_dens 7850 cb_yield 5.1e+08 cb_ycomp 5.1e+08"));

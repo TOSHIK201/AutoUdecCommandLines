@@ -16,7 +16,7 @@ public class Step3 {
                 StandardOpenOption.WRITE
         )) {
 
-            writer.write("restore " + ParameterList.outputPath + "/dat/step_2.dat\n\n");
+            writer.write("restore " + ParameterList.outputPath + "/dat/step_2.save\n\n");
 
             String g = (ParameterList.gravity == Math.rint(ParameterList.gravity)) ? String.valueOf((int) ParameterList.gravity) : String.valueOf(ParameterList.gravity);
             writer.write("set gravity 0 " + g + "\n\n");
@@ -52,7 +52,7 @@ public class Step3 {
             }
             writer.write("solve\n\n");
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_3.dat\n\n");
+            writer.write("save " + ParameterList.outputPath + "/dat/step_3.save\n\n");
 
             for (PlotPreset preset : selectedPlots) {
                 String plot = preset.histCommand != null
@@ -65,7 +65,7 @@ public class Step3 {
 
             if (callNext) {
                 writer.write("\n");
-                writer.write("call " + ParameterList.outputPath + "/code/step_4.txt\n");
+                writer.write("call " + ParameterList.outputPath + "/code/step_4.dat\n");
             }
 
         } catch (IOException e) {

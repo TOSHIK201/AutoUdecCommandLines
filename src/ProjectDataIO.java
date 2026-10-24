@@ -65,6 +65,14 @@ class ProjectDataIO {
             out.writeDouble(b.syy);
             out.writeUTF(b.name == null ? "" : b.name);
             out.writeUTF(b.edge.name());
+            out.writeBoolean(b.useXGrad);
+            out.writeBoolean(b.useYGrad);
+            out.writeDouble(b.sxxx);
+            out.writeDouble(b.sxyx);
+            out.writeDouble(b.syyx);
+            out.writeDouble(b.sxxy);
+            out.writeDouble(b.sxyy);
+            out.writeDouble(b.syyy);
         }
         ProjectStage4IO.write(out);
     }
@@ -119,6 +127,11 @@ class ProjectDataIO {
             for (int i = 0; i < boundaryCount; i++) {
                 BoundaryCondition b = new BoundaryCondition();
                 b.type = BoundaryCondition.Type.valueOf(in.readUTF());
+                if (b.type == BoundaryCondition.Type.DISPLACE_X) {
+                    b.type = BoundaryCondition.Type.VELOCITY_X;
+                } else if (b.type == BoundaryCondition.Type.DISPLACE_Y) {
+                    b.type = BoundaryCondition.Type.VELOCITY_Y;
+                }
                 b.value = in.readDouble();
                 b.sx = in.readDouble();
                 b.sy = in.readDouble();
@@ -133,6 +146,16 @@ class ProjectDataIO {
                 b.name = in.readUTF();
                 if (version >= 3) {
                     b.edge = BoundaryCondition.Edge.valueOf(in.readUTF());
+                }
+                if (version >= 10) {
+                    b.useXGrad = in.readBoolean();
+                    b.useYGrad = in.readBoolean();
+                    b.sxxx = in.readDouble();
+                    b.sxyx = in.readDouble();
+                    b.syyx = in.readDouble();
+                    b.sxxy = in.readDouble();
+                    b.sxyy = in.readDouble();
+                    b.syyy = in.readDouble();
                 }
                 ParameterList.boundaries.add(b);
             }

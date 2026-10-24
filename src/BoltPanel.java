@@ -34,7 +34,7 @@ public class BoltPanel extends JPanel {
 
         JPanel top = new JPanel(new BorderLayout());
         JPanel tools = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        JButton draw = new JButton("画安装线");
+        JButton draw = new JButton("绘制安装线");
         draw.addActionListener(e -> canvas.setBoltMode(true));
         JButton apply = new JButton("应用组参数");
         apply.addActionListener(e -> applyGroup());
@@ -193,7 +193,7 @@ public class BoltPanel extends JPanel {
     private void clearAll() {
         if (ParameterList.boltGroups.isEmpty()) return;
         int choice = JOptionPane.showConfirmDialog(this,
-                "清除所有锚杆组？锚杆参数默认值会保留。", "清空锚杆",
+                "确认清除全部锚杆组？新建锚杆组的默认参数保持不变。", "清空锚杆",
                 JOptionPane.OK_CANCEL_OPTION);
         if (choice != JOptionPane.OK_OPTION) return;
         UndoManager.push();

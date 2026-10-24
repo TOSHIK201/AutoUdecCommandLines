@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class Util {
@@ -165,40 +164,6 @@ public class Util {
             sb.append(String.format("jregion id %d 0 %.2f 0 %.2f %.2f %.2f %.2f %.2f\n",
                     id, bottom, top, modelLength, top, modelLength, bottom));
             id--;
-        }
-        return sb.toString();
-    }
-
-    /**
-     * 生成 jset 命令
-     *
-     * @param heightList  高度数组（从高到低）
-     * @param spacingList 期望的节理间距数组（从顶到底）
-     * @param modelLength 模型总长
-     * @return jset 命令字符串
-     */
-    public static String generateJsets(double[] heightList, double[] spacingList, double modelLength) {
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < spacingList.length; i++) {
-            // 当前层的顶部、底部高度和厚度
-            double top = heightList[i];
-            double bottom = heightList[i + 1];
-            double layerHeight = top - bottom;
-
-            // 输入间距只作期望值，按层厚取整并避开薄条
-            double targetSpacing = spacingList[i];
-            double spacing = actualSpacing(layerHeight, modelLength, targetSpacing);
-
-            String range = "range jregion " + (i + 1);
-
-            sb.append(String.format("jset 0 0 %.2f 0 0 0 %.2f 0 0 %.2f %s\n",
-                    modelLength, spacing, bottom, range));
-
-            sb.append(String.format("jset 90 0 %.2f 0 0 0 %.2f 0 0 %.2f %s\n",
-                    layerHeight, spacing, bottom, range));
-
-            sb.append("\n");
         }
         return sb.toString();
     }
@@ -404,15 +369,6 @@ public class Util {
         return layerHeight / rows;
     }
 
-    public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing) {
-        return actualSpacing(layerHeight, modelLength, inputSpacing,
-                Collections.emptyList(), Collections.emptyList());
-    }
-
-    public static double layerSpacing(int layerIndex, double inputSpacing) {
-        return layerWidthSpacing(layerIndex, inputSpacing);
-    }
-
     public static double layerWidthSpacing(int layerIndex, double inputSpacing) {
         double target = scaledTarget(inputSpacing);
         double range = Math.max(0.05, target * 0.50);
@@ -480,71 +436,9 @@ public class Util {
         return y2 >= bottom - 1e-6 && y1 <= top + 1e-6;
     }
 
-    public static double actualSpacing(double layerHeight, double modelLength, double inputSpacing,
-                                       List<Double> xBounds, List<Double> yOffsets) {
-        double target = round2(Math.max(inputSpacing, 0.05));
-        if (ParameterList.debugMode) target = round2(target * Math.max(1.0, ParameterList.debugScale));
-        return searchSpacing(layerHeight, modelLength, target, xBounds, yOffsets, -1);
-    }
-
-    private static double searchSpacing(double layerHeight, double modelLength, double target,
-                                        List<Double> xBounds, List<Double> yOffsets, int layerIndex) {
-
-        double range = Math.max(0.05, target * (layerIndex >= 0 && hasExcavation(layerIndex) ? 0.30 : 0.15));
-        int steps = (int) Math.round(range / 0.01);
-        double best = -1;
-        double bestScore = Double.MAX_VALUE;
-        for (int i = -steps; i <= steps; i++) {
-            double candidate = round2(target + i * 0.01);
-            if (candidate < 0.05) continue;
-            double rh = remainder(layerHeight, candidate);
-            double rl = remainder(modelLength, candidate);
-            if (!noSliver(rh, candidate) || !noSliver(rl, candidate)) continue;
-            if (!alignsWithExcavation(layerIndex, candidate)) continue;
-            boolean boundaryOk = true;
-            for (double x : xBounds) {
-                if (!noBoundarySliver(x, candidate)) {
-                    boundaryOk = false;
-                    break;
-                }
-            }
-            if (boundaryOk) {
-                for (double y : yOffsets) {
-                    if (!noBoundarySliver(y, candidate)) {
-                        boundaryOk = false;
-                        break;
-                    }
-                }
-            }
-            if (!boundaryOk) continue;
-            double score = Math.abs(candidate - target);
-            if (rh < 1e-6) score -= 0.001;
-            if (rl < 1e-6) score -= 0.001;
-            if (score < bestScore) {
-                bestScore = score;
-                best = candidate;
-            }
-        }
-        if (best > 0) return best;
-
-        int parts = (int) Math.max(1, Math.round(layerHeight / target + 1e-9));
-        return round2(layerHeight / parts);
-    }
-
     private static double remainder(double length, double spacing) {
         double parts = Math.floor(length / spacing + 1e-9);
         return length - parts * spacing;
-    }
-
-    private static boolean noSliver(double remainder, double spacing) {
-        return remainder < 1e-6 || remainder >= Math.max(0.10, 0.10 * spacing);
-    }
-
-    private static boolean noBoundarySliver(double offset, double spacing) {
-        double r = remainder(offset, spacing);
-        if (r < 1e-6) return true;
-        double gap = Math.min(r, spacing - r);
-        return gap >= Math.max(0.10, 0.10 * spacing);
     }
 
     private static boolean alignsWithExcavation(int layerIndex, double spacing) {
@@ -555,13 +449,6 @@ public class Util {
             if (!multiple(e.cutWidth, spacing) || !multiple(e.stepDist, spacing)) return false;
         }
         return true;
-    }
-
-    private static boolean hasExcavation(int layerIndex) {
-        for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (excavationAffectsLayer(e, layerIndex)) return true;
-        }
-        return false;
     }
 
     private static boolean multiple(double value, double spacing) {

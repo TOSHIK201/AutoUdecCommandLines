@@ -18,8 +18,8 @@ public class Step1 {
         ) {
             writer.write("new\n");
             writer.write("\n");
-            writer.write("set ovtol " + ParameterList.ovtol + "\n");
             writer.write("round " + ParameterList.round + "\n");
+            writer.write("set ovtol " + ParameterList.ovtol + "\n");
             writer.write("title\n");
             writer.write(ParameterList.step1Title + "\n");
             writer.write("\n");
@@ -53,7 +53,7 @@ public class Step1 {
             writer.write("\n");
             writer.write(Util.generateJsetsFromLayers(ParameterList.heightList, ParameterList.layerJoints, ParameterList.modelLength));
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_1.dat\n");
+            writer.write("save " + ParameterList.outputPath + "/dat/step_1.save\n");
             for (PlotPreset preset : ParameterList.plotPresets1) {
                 if (preset.selected && preset.histCommand == null) {
                     writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
@@ -62,7 +62,7 @@ public class Step1 {
 
             if (callNext) {
                 writer.write("\n");
-                writer.write("call " + ParameterList.outputPath + "/code/step_2.txt\n");
+                writer.write("call " + ParameterList.outputPath + "/code/step_2.dat\n");
             }
 
         } catch (IOException e){

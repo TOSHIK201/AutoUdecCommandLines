@@ -1,45 +1,52 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.function.Consumer;
-import java.util.function.DoubleConsumer;
-import java.util.function.IntConsumer;
 
 public class StagePanel extends JPanel {
     private final LayerCanvas canvas;
+    private final PropertyPanel propertyPanel;
     private JCheckBox call2, call3;
-    private final JTabbedPane tabs = new JTabbedPane();
+    private final CardLayout stageCards = new CardLayout();
+    private final JPanel stageContent = new JPanel(stageCards);
+    private final ButtonGroup stageGroup = new ButtonGroup();
+    private final java.util.List<JToggleButton> stageButtons = new java.util.ArrayList<>();
+    private int selectedStage = 0;
     private JTabbedPane subStage1;
+    private JTabbedPane subStage2;
 
     public StagePanel(PropertyPanel propertyPanel, LayerCanvas canvas) {
         this.canvas = canvas;
+        this.propertyPanel = propertyPanel;
         setLayout(new BorderLayout());
-        tabs.addTab("阶段1 岩层", buildStage1(propertyPanel));
-        tabs.addTab("阶段2 节理", buildStage2(propertyPanel));
-        tabs.addTab("阶段3 边界", buildStage3());
-        tabs.addTab("阶段4 支护/开挖", new Stage4Panel(canvas));
-        tabs.addChangeListener(e -> {
-            int i = tabs.getSelectedIndex();
-            canvas.setActiveStage(i);
-            if (i == 0 || i == 1) propertyPanel.bindData(canvas.getSelectedIndex());
-        });
-        add(tabs, BorderLayout.CENTER);
+        stageContent.add(buildStage1(propertyPanel), "0");
+        stageContent.add(buildStage2(propertyPanel), "1");
+        stageContent.add(buildStage3(), "2");
+        stageContent.add(new Stage4Panel(canvas), "3");
+        add(buildStageHeader(), BorderLayout.NORTH);
+        add(stageContent, BorderLayout.CENTER);
+        selectStage(0);
     }
 
     public int getSelectedTab() {
-        return tabs.getSelectedIndex();
+        return selectedStage;
     }
 
     public void setSelectedTab(int index) {
-        if (index >= 0 && index < tabs.getTabCount()) tabs.setSelectedIndex(index);
+        selectStage(index);
     }
 
     public int getSelectedSubTab() {
-        return subStage1 == null ? 0 : subStage1.getSelectedIndex();
+        if (selectedStage == 0 && subStage1 != null) return subStage1.getSelectedIndex();
+        if (selectedStage == 1 && subStage2 != null) return subStage2.getSelectedIndex();
+        return 0;
     }
 
     public void setSelectedSubTab(int index) {
         if (subStage1 != null && index >= 0 && index < subStage1.getTabCount()) {
             subStage1.setSelectedIndex(index);
+        }
+        if (subStage2 != null && index >= 0 && index < subStage2.getTabCount()) {
+            subStage2.setSelectedIndex(index);
         }
     }
 
@@ -58,32 +65,61 @@ public class StagePanel extends JPanel {
         }
     }
 
+    private JPanel buildStageHeader() {
+        JPanel header = new JPanel(new GridLayout(2, 1));
+        header.add(stageButton("阶段1 建模与节理", 0));
+        JPanel lower = new JPanel(new GridLayout(1, 3));
+        lower.add(stageButton("阶段2 网格与材料", 1));
+        lower.add(stageButton("阶段3 边界", 2));
+        lower.add(stageButton("阶段4 支护/开挖", 3));
+        header.add(lower);
+        return header;
+    }
+
+    private JToggleButton stageButton(String text, int index) {
+        JToggleButton button = new JToggleButton(text);
+        button.setFocusPainted(false);
+        button.setMargin(new Insets(3, 4, 3, 4));
+        button.addActionListener(e -> selectStage(index));
+        stageGroup.add(button);
+        stageButtons.add(button);
+        return button;
+    }
+
+    private void selectStage(int index) {
+        if (index < 0 || index >= stageButtons.size()) return;
+        selectedStage = index;
+        stageCards.show(stageContent, String.valueOf(index));
+        stageButtons.get(index).setSelected(true);
+        canvas.setActiveStage(index);
+        if (index == 0 || index == 1) {
+            propertyPanel.bindData(canvas.getSelectedIndex());
+        }
+    }
+
     private JPanel buildStage1(PropertyPanel propertyPanel) {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel top = new JPanel(new BorderLayout());
 
         JPanel modelRow = new JPanel(new GridBagLayout());
-        GridBagConstraints c = grid();
+        GridBagConstraints c = StageUiSupport.grid();
         JTextField fLength = new JTextField(String.valueOf(ParameterList.modelLength), 6);
         JTextField fTitle = new JTextField(ParameterList.step1Title, 18);
-        addRow(modelRow, c, 0, "模型总长(m)", fLength, 95);
-        addRow(modelRow, c, 1, "阶段1图标题", fTitle, 240);
-        bindDouble(fLength, v -> ParameterList.modelLength = v);
-        bindString(fTitle, v -> ParameterList.step1Title = v);
+        StageUiSupport.addRow(modelRow, c, 0, "模型总长(m)", fLength, 95);
+        StageUiSupport.addRow(modelRow, c, 1, "阶段1图标题", fTitle, 240);
+        StageUiSupport.bindDouble(fLength, v -> ParameterList.modelLength = v, canvas);
+        StageUiSupport.bindString(fTitle, v -> ParameterList.step1Title = v);
         top.add(modelRow, BorderLayout.NORTH);
-
-        JLabel hint = new JLabel("开挖属性可独立新建；“设为开挖煤层”用选中岩层中部快速建立");
-        hint.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-        top.add(hint, BorderLayout.SOUTH);
 
         panel.add(top, BorderLayout.NORTH);
 
         subStage1 = new JTabbedPane();
-        subStage1.addTab("岩层属性", new JScrollPane(propertyPanel.getRockPanel()));
+        subStage1.addTab("岩层几何", new JScrollPane(propertyPanel.getLayerPanel()));
+        subStage1.addTab("节理几何", propertyPanel.getJointGeometryPanel());
         ExcavationPropertyPanel exPanel = new ExcavationPropertyPanel(canvas);
-        subStage1.addTab("开挖属性", exPanel);
+        subStage1.addTab("开挖几何", exPanel);
         subStage1.addChangeListener(e -> {
-            if (subStage1.getSelectedIndex() == 1) exPanel.reload();
+            if (subStage1.getSelectedIndex() == 2) exPanel.reload();
         });
         panel.add(subStage1, BorderLayout.CENTER);
 
@@ -99,12 +135,16 @@ public class StagePanel extends JPanel {
     private JPanel buildStage2(PropertyPanel propertyPanel) {
         JPanel panel = new JPanel(new BorderLayout());
         JPanel top = new JPanel(new GridBagLayout());
-        GridBagConstraints c = grid();
+        GridBagConstraints c = StageUiSupport.grid();
         JTextField fTitle = new JTextField(ParameterList.step2Title, 18);
-        addRow(top, c, 0, "阶段2图标题", fTitle, 240);
-        bindString(fTitle, v -> ParameterList.step2Title = v);
+        StageUiSupport.addRow(top, c, 0, "阶段2图标题", fTitle, 240);
+        StageUiSupport.bindString(fTitle, v -> ParameterList.step2Title = v);
         panel.add(top, BorderLayout.NORTH);
-        panel.add(propertyPanel.getJointPanel(), BorderLayout.CENTER);
+
+        subStage2 = new JTabbedPane();
+        subStage2.addTab("岩体材料与网格", new JScrollPane(propertyPanel.getRockMaterialPanel()));
+        subStage2.addTab("节理材料", new JScrollPane(propertyPanel.getJointMaterialPanel()));
+        panel.add(subStage2, BorderLayout.CENTER);
         JPanel south = new JPanel(new BorderLayout());
         south.add(new StagePlotPanel("阶段2绘图", ParameterList.plotPresets2, false, canvas::repaint),
                 BorderLayout.NORTH);
@@ -149,79 +189,5 @@ public class StagePanel extends JPanel {
         bar.add(check);
         bar.add(button);
         return bar;
-    }
-    private GridBagConstraints grid() {
-        GridBagConstraints c = new GridBagConstraints();
-        c.fill = GridBagConstraints.NONE;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(2, 4, 2, 4);
-        return c;
-    }
-    private void addRow(JPanel panel, GridBagConstraints c, int row, String label, JComponent field, int width) {
-        c.gridy = row;
-        c.gridx = 0;
-        c.weightx = 0;
-        panel.add(new JLabel(label), c);
-        c.gridx = 1;
-        c.weightx = 0;
-        if (field instanceof JTextField) {
-            field.setPreferredSize(new Dimension(width, 22));
-        }
-        panel.add(field, c);
-        c.gridx = 2;
-        c.weightx = 1.0;
-        panel.add(new JLabel(""), c);
-        c.weightx = 0;
-    }
-    private void bindDouble(JTextField field, DoubleConsumer setter) {
-        field.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override public void focusLost(java.awt.event.FocusEvent e) { saveDouble(field, setter); }
-        });
-        field.addActionListener(e -> saveDouble(field, setter));
-    }
-
-    private void saveDouble(JTextField field, DoubleConsumer setter) {
-        try {
-            String text = field.getText().trim();
-            if (!text.isEmpty()) {
-                UndoManager.push();
-                setter.accept(Double.parseDouble(text));
-                if (canvas != null) canvas.repaint();
-            }
-        } catch (NumberFormatException ignored) {
-        }
-    }
-
-    private void bindInt(JTextField field, IntConsumer setter) {
-        field.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override public void focusLost(java.awt.event.FocusEvent e) { saveInt(field, setter); }
-        });
-        field.addActionListener(e -> saveInt(field, setter));
-    }
-    private void saveInt(JTextField field, IntConsumer setter) {
-        try {
-            String text = field.getText().trim();
-            if (!text.isEmpty()) {
-                UndoManager.push();
-                setter.accept(Integer.parseInt(text));
-                if (canvas != null) canvas.repaint();
-            }
-        } catch (NumberFormatException ignored) {
-        }
-    }
-
-    private void bindString(JTextField field, Consumer<String> setter) {
-        field.addFocusListener(new java.awt.event.FocusAdapter() {
-            @Override public void focusLost(java.awt.event.FocusEvent e) { saveString(field, setter); }
-        });
-        field.addActionListener(e -> saveString(field, setter));
-    }
-
-    private void saveString(JTextField field, Consumer<String> setter) {
-        String text = field.getText().trim();
-        if (!text.isEmpty()) {
-            UndoManager.push();
-            setter.accept(text);
-        }
     }
 }

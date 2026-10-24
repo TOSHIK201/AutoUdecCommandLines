@@ -11,7 +11,7 @@ public class ChainTest {
         Path step3 = dir.resolve("step_3_chain.txt");
         Step3.step3(step3.toString(), true);
         String text = new String(Files.readAllBytes(step3), Charset.forName("GBK"));
-        String call = "call " + ParameterList.outputPath + "/code/step_4.txt";
+        String call = "call " + ParameterList.outputPath + "/code/step_4.dat";
         if (!text.contains(call)) throw new AssertionError("step_3 未调用 step_4");
         System.out.println("CHAIN TEST PASSED");
     }

@@ -14,7 +14,7 @@ public class Stage4LabelTest {
 
                 JLabel region = (JLabel) read(panel, "regionLabel");
                 check("default region label", region.getText().contains("开切眼"));
-                check("default region range", region.getText().contains("56.00"));
+                check("default region range", region.getText().contains("100.00"));
 
                 JComboBox<?> combo = (JComboBox<?>) read(panel, "group");
                 check("group count", combo.getItemCount() >= 8);

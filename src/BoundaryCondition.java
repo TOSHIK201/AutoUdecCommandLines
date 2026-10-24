@@ -31,9 +31,16 @@ public class BoundaryCondition {
         }
     }
 
+    public static Type[] uiTypes() {
+        return new Type[]{Type.VELOCITY_X, Type.VELOCITY_Y, Type.STRESS};
+    }
+
     public Type type;
     public double value;
     public double sxx, sxy, syy;
+    public double sxxx, sxyx, syyx;
+    public double sxxy, sxyy, syyy;
+    public boolean useXGrad, useYGrad;
     public double sx, sy, ex, ey;
     public double width;
     public String name;
@@ -87,8 +94,17 @@ public class BoundaryCondition {
         String range = String.format(Locale.ROOT, "range %.2f %.2f %.2f %.2f",
                 r[0], r[1], r[2], r[3]);
         if (type.stress()) {
-            return String.format(Locale.ROOT, "bound stress %.4e %.4e %.4e %s",
-                    sxx, sxy, syy, range);
+            StringBuilder command = new StringBuilder(String.format(Locale.ROOT,
+                    "bound stress %.4e %.4e %.4e", sxx, sxy, syy));
+            if (useXGrad) {
+                command.append(String.format(Locale.ROOT, " xgrad %.4e %.4e %.4e",
+                        sxxx, sxyx, syyx));
+            }
+            if (useYGrad) {
+                command.append(String.format(Locale.ROOT, " ygrad %.4e %.4e %.4e",
+                        sxxy, sxyy, syyy));
+            }
+            return command.append(' ').append(range).toString();
         }
         String key = type.vertical() ? "xvel" : "yvel";
         double v = type.displacement() ? 0.0 : value;
@@ -98,8 +114,10 @@ public class BoundaryCondition {
     public String label() {
         double[] r = range();
         if (type.stress()) {
-            return String.format(Locale.ROOT, "%s σxx=%.3e σxy=%.3e σyy=%.3e  宽 %.2f  x[%.2f,%.2f] y[%.2f,%.2f]",
-                    type.label, sxx, sxy, syy, width, r[0], r[1], r[2], r[3]);
+            String gradient = (useXGrad ? " xgrad" : "") + (useYGrad ? " ygrad" : "");
+            return String.format(Locale.ROOT,
+                    "%s%s σxx=%.3e σxy=%.3e σyy=%.3e  宽 %.2f  x[%.2f,%.2f] y[%.2f,%.2f]",
+                    type.label, gradient, sxx, sxy, syy, width, r[0], r[1], r[2], r[3]);
         }
         double shown = type.displacement() ? 0.0 : value;
         return String.format(Locale.ROOT, "%s = %s  宽 %.2f  x[%.2f,%.2f] y[%.2f,%.2f]",

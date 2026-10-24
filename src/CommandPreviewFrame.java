@@ -17,10 +17,10 @@ public class CommandPreviewFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("step_1.txt", new JScrollPane(area1));
-        tabs.addTab("step_2.txt", new JScrollPane(area2));
-        tabs.addTab("step_3.txt", new JScrollPane(area3));
-        tabs.addTab("step_4.txt", new JScrollPane(area4));
+        tabs.addTab("step_1.dat", new JScrollPane(area1));
+        tabs.addTab("step_2.dat", new JScrollPane(area2));
+        tabs.addTab("step_3.dat", new JScrollPane(area3));
+        tabs.addTab("step_4.dat", new JScrollPane(area4));
         add(tabs, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
@@ -39,12 +39,20 @@ public class CommandPreviewFrame extends JFrame {
     }
 
     private void load() {
+        if (ParameterList.outputPath == null || ParameterList.outputPath.trim().isEmpty()) {
+            String message = "请先在主界面选择输出路径。";
+            area1.setText(message);
+            area2.setText(message);
+            area3.setText(message);
+            area4.setText(message);
+            return;
+        }
         try {
             Main.generateAllFiles();
-            area1.setText(read("step_1.txt"));
-            area2.setText(read("step_2.txt"));
-            area3.setText(read("step_3.txt"));
-            area4.setText(read("step_4.txt"));
+            area1.setText(read("step_1.dat"));
+            area2.setText(read("step_2.dat"));
+            area3.setText(read("step_3.dat"));
+            area4.setText(read("step_4.dat"));
         } catch (Exception e) {
             area1.setText("生成或读取失败：\n" + e);
         }

@@ -7,7 +7,7 @@ public class ExcavationPropertyPanel extends JPanel {
     private final JList<ExcavationLayer> list = new JList<>(model);
     private final ExcavationFormPanel form;
     private final JButton coalButton = new JButton("设为开挖煤层");
-    private final JToggleButton mode = new JToggleButton("框选开挖");
+    private final JToggleButton mode = new JToggleButton("拖拽框选");
     private final JLabel status = new JLabel();
     private boolean binding;
 
@@ -18,7 +18,7 @@ public class ExcavationPropertyPanel extends JPanel {
 
         JPanel top = new JPanel(new BorderLayout());
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        mode.setToolTipText("按下后在画布上拖动框选；再次点击结束框选");
+        mode.setToolTipText("启用后在画布拖拽框选，再次点击结束");
         mode.addActionListener(e -> {
             if (!mode.isSelected()) {
                 canvas.setExcavationMode(false);
@@ -36,7 +36,7 @@ public class ExcavationPropertyPanel extends JPanel {
         });
         JButton delete = new JButton("删除选中");
         delete.addActionListener(e -> deleteSelected());
-        coalButton.setToolTipText("以当前选中岩层的中部快速生成一个开挖组");
+        coalButton.setToolTipText("以当前岩层中部生成开挖区域");
         coalButton.addActionListener(e -> quickCoal());
         buttons.add(mode);
         buttons.add(delete);
@@ -70,7 +70,7 @@ public class ExcavationPropertyPanel extends JPanel {
         canvas.setExcavationEdited(this::bindSelected);
         canvas.setExcavationModeListener(on -> {
             mode.setSelected(on);
-            mode.setText(on ? "结束框选" : "框选开挖");
+            mode.setText(on ? "结束框选" : "拖拽框选");
         });
         reload();
     }
@@ -132,7 +132,7 @@ public class ExcavationPropertyPanel extends JPanel {
         if (existing != null) {
             reload();
             list.setSelectedIndex(ParameterList.excavationLayers.indexOf(existing));
-            status.setText("该层已有开挖组，已选中");
+            status.setText("该层已存在开挖区域，已选择");
             return;
         }
         LayerData layer = ParameterList.layers.get(index);

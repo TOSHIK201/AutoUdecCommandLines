@@ -36,7 +36,7 @@ public class BoundaryGenTest {
         List<String> lines = Files.readAllLines(step3, Charset.forName("GBK"));
         String text = String.join("\n", lines);
         System.out.println(text);
-        check("top stress has range", text.contains("bound stress 0.0000e+00 0.0000e+00 0.0000e+00 range 0.00 150.00 62.10 62.30"));
+        check("top stress has range", text.contains("bound stress 0.0000e+00 0.0000e+00 -3.1525e+06 range 0.00 150.00 62.10 62.30"));
         check("velocity boundary", text.contains("bound xvel -0.02 range 19.75 20.25 10.00 30.00"));
         check("displacement boundary", text.contains("bound yvel 0 range 10.00 50.00 39.85 40.15"));
         check("stress before velocity", text.indexOf("bound stress") < text.indexOf("bound xvel 0"));

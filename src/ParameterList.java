@@ -8,7 +8,7 @@ class ParameterList {
     // 越靠下的参数越不建议更改！
 
     // 输出路径
-    public static String outputPath = "F:/Itasca/UDECProjects/102";
+    public static String outputPath = "";
     public static String projectPath = "";
     public static boolean restoring = false;
 
@@ -22,7 +22,7 @@ class ParameterList {
     public static int outputHeight = 1200;
 
     // 模型总宽度
-    public static double modelLength = 150;
+    public static double modelLength = 238;
 
     // 开挖参数
     public static int step = 3;
@@ -36,7 +36,7 @@ class ParameterList {
     public static String excavationPreset = "开切眼 + 工作面推进";
 
     // UDEC 可执行文件与自动调用
-    public static String udecExePath = "F:/Itasca/udec4.0/udec400/udec_dp.exe";
+    public static String udecExePath = "";
     public static boolean autoRunAfterGenerate = true;
     public static boolean debugMode = false;
     public static double debugScale = 10.0;
@@ -74,7 +74,7 @@ class ParameterList {
     public static int boltNodes = 12;
     public static double boltArea = 1.8e-4;
     public static double boltPretension = 8e4;
-    public static int plinePoints = 200;
+    public static int plinePoints = 1190;
 
     // 煤层在 layers 中的下标（从上往下，0 开始）
     public static int coal9Layer = 6;
@@ -82,7 +82,7 @@ class ParameterList {
 
     // 数值控制
     public static double round = 0.03;
-    public static double ovtol = 0.8;
+    public static double ovtol = 0.05;
     public static double boundTol = 0.1;
     public static double gravity = -10.0;
     public static double stressTop = 0.0;
@@ -242,6 +242,7 @@ class ParameterList {
                 BoundaryCondition.Type.STRESS, 0, h, l, h, boundaryWidth);
         top.name = "上边界（应力）";
         top.edge = BoundaryCondition.Edge.TOP;
+        top.syy = -3.1525e6;
         boundaries.add(left);
         boundaries.add(right);
         boundaries.add(bottom);

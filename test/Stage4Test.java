@@ -6,19 +6,20 @@ import java.nio.file.Paths;
 public class Stage4Test {
     public static void main(String[] args) throws Exception {
         ParameterList.syncFromLayers();
+        ParameterList.outputPath = "F:/Itasca/UDECProjects/102";
         ParameterList.boltGroups.clear();
         ParameterList.plines.clear();
         ParameterList.logGroups.clear();
         ParameterList.stage4Actions.clear();
 
         BoltGroup group = new BoltGroup("BOLT1");
-        group.x1 = 56.5; group.y1 = 26.4; group.x2 = 63.5; group.y2 = 26.4;
+        group.x1 = 100.5; group.y1 = 26.4; group.x2 = 107.5; group.y2 = 26.4;
         group.count = 8;
         group.length = 2.4;
         group.rebuild();
         check("bolt count", group.bolts.size() == 8);
         check("bolt upward", Math.abs(group.baseAngle - 90) < 1e-6);
-        check("bolt endpoint", Math.abs(group.bolts.get(1).ex() - 57.5) < 1e-6
+        check("bolt endpoint", Math.abs(group.bolts.get(1).ex() - 101.5) < 1e-6
                 && Math.abs(group.bolts.get(1).ey() - 28.8) < 1e-6);
         check("auto cable mat", group.cableMat == 11 && group.groutMat == 12);
         group.bolts.get(0).angleDeg = 165;
@@ -26,7 +27,7 @@ public class Stage4Test {
         ParameterList.boltGroups.add(group);
 
         Pline pline = new Pline();
-        pline.x1 = 0; pline.y1 = 38.75; pline.x2 = 150; pline.y2 = 38.75; pline.points = 200;
+        pline.x1 = 0; pline.y1 = 38.75; pline.x2 = 238; pline.y2 = 38.75; pline.points = 200;
         ParameterList.plines.add(pline);
 
         for (PlotPreset p : ParameterList.plotPresets4) p.selected = false;
@@ -67,15 +68,15 @@ public class Stage4Test {
             if (line.startsWith("cable ") && !line.startsWith("cable delete")) cableCount++;
         }
         check("cable commands", cableCount == 8);
-        check("angled bolt", text.contains("cable 56.5000 26.4000 54.1818 27.0212"));
+        check("angled bolt", text.contains("cable 100.5000 26.4000 98.1818 27.0212"));
         check("cable props", text.contains("prop mat 11 cb_ymod")
                 && text.contains("prop mat 12 cb_kbond"));
-        check("pline", text.contains("set pline 0.00 38.75 150.00 38.75 200"));
+        check("pline", text.contains("set pline 0.00 38.75 238.00 38.75 200"));
         check("state solve", text.contains("delete range group state_1_9\nsolve"));
-        check("save module", text.contains("save F:/Itasca/UDECProjects/102/dat/step_4_1.dat"));
+        check("save module", text.contains("save F:/Itasca/UDECProjects/102/dat/step_4_1.save"));
         check("layered plot", text.contains("plot syy fill block white cable blue"));
         check("plot tagged", text.contains("after_state_1_9_step_4_16.jpg"));
-        check("plot title tagged", text.contains("after_state_1_9 Y"));
+        check("plot title tagged", text.contains("after_state_1_9 _syy_block_cable"));
         check("hist plot", text.contains("plot hist 1"));
         check("log file", text.contains("after_state_1_9_pline1_ydis.log"));
         check("log print", text.contains("print pline 1 ydis"));

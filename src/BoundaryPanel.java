@@ -21,17 +21,16 @@ public class BoundaryPanel extends JPanel {
         gravityField.setText(BoundaryCondition.fmt(ParameterList.gravity));
         bindDouble(gravityField, v -> ParameterList.gravity = v);
         top.add(gravityField);
-        top.add(new JLabel("默认：左/右/底速度，上应力（分量手填）"));
+        top.add(new JLabel("默认边界：左右与底部速度约束，顶部应力边界（分量手动输入）"));
 
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
-        JButton draw = new JButton("画线新建");
+        JButton draw = new JButton("绘制边界");
         draw.setToolTipText("在画布上点两个点，生成一条边界线");
         draw.addActionListener(e -> canvas.setBoundaryMode(true));
         JButton delete = new JButton("删除选中");
         delete.addActionListener(e -> deleteSelected());
         toolbar.add(draw);
         toolbar.add(delete);
-        toolbar.add(new JLabel("位移边界按 UDEC 规则固定为 xvel/yvel = 0"));
 
         list.setVisibleRowCount(4);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);

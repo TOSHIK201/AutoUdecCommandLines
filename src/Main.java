@@ -6,45 +6,45 @@ import java.nio.file.Paths;
 
 public class Main {
     public static void generateStep1() {
-        ensureDirs();
+        if (!ensureDirs()) return;
         ParameterList.syncFromLayers();
         if (ParameterList.autoRunAfterGenerate) {
             ParameterList.s1Calls2 = true;
             ParameterList.s2Calls3 = true;
         }
-        Step1.step1(ParameterList.outputPath + "/code/step_1.txt", ParameterList.s1Calls2);
+        Step1.step1(ParameterList.outputPath + "/code/step_1.dat", ParameterList.s1Calls2);
     }
 
     public static void generateStep2() {
-        ensureDirs();
+        if (!ensureDirs()) return;
         ParameterList.syncFromLayers();
-        Step2.step2(ParameterList.outputPath + "/code/step_2.txt", ParameterList.s2Calls3);
+        Step2.step2(ParameterList.outputPath + "/code/step_2.dat", ParameterList.s2Calls3);
     }
 
     public static void generateStep3() {
-        ensureDirs();
+        if (!ensureDirs()) return;
         ParameterList.syncFromLayers();
-        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", true);
-        Step4.step4(ParameterList.outputPath + "/code/step_4.txt");
+        Step3.step3(ParameterList.outputPath + "/code/step_3.dat", true);
+        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
     }
 
     public static void generateStep4() {
-        ensureDirs();
+        if (!ensureDirs()) return;
         ParameterList.syncFromLayers();
-        Step4.step4(ParameterList.outputPath + "/code/step_4.txt");
+        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
     }
 
     public static void generateAllFiles() {
-        ensureDirs();
+        if (!ensureDirs()) return;
         ParameterList.syncFromLayers();
         if (ParameterList.autoRunAfterGenerate) {
             ParameterList.s1Calls2 = true;
             ParameterList.s2Calls3 = true;
         }
-        Step1.step1(ParameterList.outputPath + "/code/step_1.txt", ParameterList.s1Calls2);
-        Step2.step2(ParameterList.outputPath + "/code/step_2.txt", ParameterList.s2Calls3);
-        Step3.step3(ParameterList.outputPath + "/code/step_3.txt", true);
-        Step4.step4(ParameterList.outputPath + "/code/step_4.txt");
+        Step1.step1(ParameterList.outputPath + "/code/step_1.dat", ParameterList.s1Calls2);
+        Step2.step2(ParameterList.outputPath + "/code/step_2.dat", ParameterList.s2Calls3);
+        Step3.step3(ParameterList.outputPath + "/code/step_3.dat", true);
+        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
         System.out.println("生成完毕（阶段1-4）：" + ParameterList.outputPath);
     }
 
@@ -55,6 +55,7 @@ public class Main {
 
     public static void autoRunUdec() {
         if (!ParameterList.autoRunAfterGenerate) return;
+        if (ParameterList.outputPath == null || ParameterList.outputPath.trim().isEmpty()) return;
         String exe = ParameterList.udecExePath == null ? "" : ParameterList.udecExePath.trim();
         if (exe.isEmpty() || !Files.exists(Paths.get(exe))) {
             javax.swing.JOptionPane.showMessageDialog(null, "请先设置有效的 UDEC 可执行文件路径");
@@ -78,7 +79,7 @@ public class Main {
             deleteQuietly(runDir.resolve("UDEC.INI"));
 
             String exeWin = exe.replace("/", "\\");
-            String step1 = codeDir.resolve("step_1.txt").toString().replace("\\", "/");
+            String step1 = codeDir.resolve("step_1.dat").toString().replace("\\", "/");
             Path ps1 = runDir.resolve("_run_udec.ps1");
             String script = "$exe = '" + exeWin + "'\r\n"
                     + "$dir = '" + runDir + "'\r\n"
@@ -127,13 +128,21 @@ public class Main {
         }
     }
 
-    private static void ensureDirs() {
+    private static boolean ensureDirs() {
+        String base = ParameterList.outputPath == null ? "" : ParameterList.outputPath.trim();
+        if (base.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "请先选择输出路径");
+            return false;
+        }
         try {
-            Files.createDirectories(Paths.get(ParameterList.outputPath + "/code"));
-            Files.createDirectories(Paths.get(ParameterList.outputPath + "/dat"));
-            Files.createDirectories(Paths.get(ParameterList.outputPath + "/output"));
+            Files.createDirectories(Paths.get(base, "code"));
+            Files.createDirectories(Paths.get(base, "dat"));
+            Files.createDirectories(Paths.get(base, "output"));
+            return true;
         } catch (IOException e) {
             System.out.println("创建目录失败：" + e.getMessage());
+            JOptionPane.showMessageDialog(null, "创建输出目录失败：\n" + e.getMessage());
+            return false;
         }
     }
 

@@ -15,7 +15,7 @@ public class Step4 {
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING)) {
 
-            writer.write("restore " + ParameterList.outputPath + "/dat/step_3.dat\n\n");
+            writer.write("restore " + ParameterList.outputPath + "/dat/step_3.save\n\n");
 
             List<PlotItem> histPlots = allHistItems();
             writeHist(writer, histPlots);
@@ -39,7 +39,7 @@ public class Step4 {
                         break;
                     case SAVE:
                         writer.write("save " + ParameterList.outputPath
-                                + "/dat/" + saveName(action.name) + ".dat\n\n");
+                                + "/dat/" + saveName(action.name) + ".save\n\n");
                         break;
                     case PLOT:
                         writePlots(writer, action, histPlots);
@@ -179,7 +179,12 @@ public class Step4 {
     private static String saveName(String name) {
         if (name == null || name.trim().isEmpty()) return "step_4";
         String value = name.trim();
-        return value.toLowerCase().endsWith(".dat")
-                ? value.substring(0, value.length() - 4) : value;
+        if (value.toLowerCase().endsWith(".save")) {
+            return value.substring(0, value.length() - 5);
+        }
+        if (value.toLowerCase().endsWith(".dat")) {
+            return value.substring(0, value.length() - 4);
+        }
+        return value;
     }
 }

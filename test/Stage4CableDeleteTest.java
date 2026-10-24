@@ -12,7 +12,7 @@ public class Stage4CableDeleteTest {
         ParameterList.stage4Actions.clear();
 
         BoltGroup group = new BoltGroup("BOLT1");
-        group.x1 = 56; group.y1 = 26.4; group.x2 = 64; group.y2 = 26.4;
+        group.x1 = 100; group.y1 = 26.4; group.x2 = 108; group.y2 = 26.4;
         group.count = 8;
         group.length = 2.4;
         group.rebuild();
@@ -29,8 +29,8 @@ public class Stage4CableDeleteTest {
         String text = new String(Files.readAllBytes(out), Charset.forName("GBK"));
         System.out.println(text);
 
-        String open = "cable delete range 56.00 64.00 21.60 26.40";
-        String state = "cable delete range 64.00 74.00 21.60 26.40";
+        String open = "cable delete range 100.00 108.00 21.60 26.40";
+        String state = "cable delete range 108.00 118.00 21.60 26.40";
         check("openOffCut has cable delete", text.contains(open));
         check("state has cable delete", text.contains(state));
         check("cable delete before openOffCut",
@@ -43,8 +43,8 @@ public class Stage4CableDeleteTest {
         check("unknown group range", Stage4Geometry.range("custom") == null);
 
         double[] r = Stage4Geometry.range("state_2_9");
-        check("state range", r != null && Math.abs(r[0] - 74) < 1e-6
-                && Math.abs(r[1] - 84) < 1e-6
+        check("state range", r != null && Math.abs(r[0] - 118) < 1e-6
+                && Math.abs(r[1] - 128) < 1e-6
                 && Math.abs(r[2] - 21.6) < 1e-6
                 && Math.abs(r[3] - 26.4) < 1e-6);
 

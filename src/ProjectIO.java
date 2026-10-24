@@ -7,7 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ProjectIO {
-    private static final String MAGIC = "AUDEC9";
+    private static final String MAGIC = "AUDEC10";
+    private static final String MAGIC_V9 = "AUDEC9";
     private static final String MAGIC_V8 = "AUDEC8";
     private static final String MAGIC_V7 = "AUDEC7";
     private static final String MAGIC_V6 = "AUDEC6";
@@ -44,7 +45,8 @@ public class ProjectIO {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
             String magic = in.readUTF();
             int version;
-            if (MAGIC.equals(magic)) version = 9;
+            if (MAGIC.equals(magic)) version = 10;
+            else if (MAGIC_V9.equals(magic)) version = 9;
             else if (MAGIC_V8.equals(magic)) version = 8;
             else if (MAGIC_V7.equals(magic)) version = 7;
             else if (MAGIC_V6.equals(magic)) version = 6;

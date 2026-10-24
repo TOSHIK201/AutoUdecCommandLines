@@ -10,14 +10,17 @@ import java.util.Set;
 // 生成带中文分组的默认参数模板
 class ConfigTemplate {
     private static final Set<String> SKIP = new HashSet<>(Arrays.asList(
-            "projectPath", "restoring", "coal9Layer", "coal10Layer"));
+            "projectPath", "restoring", "coal9Layer", "coal10Layer",
+            "s3Calls4", "boundTol", "stressTop", "stressGradient", "stressX", "stressXY",
+            "supportMat", "supportKn", "supportSpacing", "supportYcomp",
+            "supportSegments", "supportOffset", "monitorStep"));
     private static final String[] STARTUP = {"outputPath", "udecExePath", "autoRunAfterGenerate",
-            "s1Calls2", "s2Calls3", "s3Calls4", "outputWidth", "outputHeight"};
+            "s1Calls2", "s2Calls3", "outputWidth", "outputHeight"};
     private static final String[] MODEL = {"modelLength", "step", "stepDist", "cutWidth",
             "direction", "excavationHeight", "excavationCentered", "excavationOriginX",
             "excavationOriginY", "excavationPreset"};
     private static final String[] BOUNDARY = {"gravity", "stressEnabled", "boundaryWidth",
-            "round", "ovtol", "boundTol", "stressTop", "stressGradient", "stressX", "stressXY"};
+            "round", "ovtol"};
     private static final String[] JOINT = {"jointAngle", "jointAngleStdDev", "jointBridgeLength",
             "jointBridgeStdDev", "jointTraceLength", "jointTraceStdDev", "jointSpacing",
             "jointSpacingStdDev", "jointStartX", "jointStartY"};

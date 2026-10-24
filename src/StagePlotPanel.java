@@ -105,7 +105,7 @@ public class StagePlotPanel extends JPanel {
         JLabel label = new JLabel(preset.label);
         label.setPreferredSize(new Dimension(100, 20));
         row.add(label);
-        row.add(new JLabel("图头"));
+        row.add(new JLabel("图标题"));
         JTextField title = new JTextField(preset.title, 12);
         title.setPreferredSize(new Dimension(130, 22));
         bindTitle(title, preset);

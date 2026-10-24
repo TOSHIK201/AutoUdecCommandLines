@@ -33,7 +33,6 @@ public class Stage4Action {
     public double cbSbond = 16e6;
     public Integer pline;
     public String data;
-    public final List<String> plotLabels = new ArrayList<>();
     public final List<PlotItem> plotItems = new ArrayList<>();
 
     public Stage4Action(Type type) {

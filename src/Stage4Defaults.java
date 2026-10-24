@@ -3,7 +3,7 @@ class Stage4Defaults {
         if (ParameterList.boltGroups.isEmpty()) addBolts();
         if (ParameterList.plines.isEmpty()) {
             Pline p = new Pline();
-            p.x1 = 0; p.y1 = 38.75; p.x2 = 150; p.y2 = 38.75;
+            p.x1 = 0; p.y1 = 38.75; p.x2 = 238; p.y2 = 38.75;
             p.points = ParameterList.plinePoints;
             ParameterList.plines.add(p);
         }
@@ -12,10 +12,10 @@ class Stage4Defaults {
     }
 
     private static void addBolts() {
-        BoltGroup b1 = add("BOLT1", 56, 26.4, 64, 26.4, 8, 1.0, 2.4);
-        add("BOLT2", 56, 26.4, 64, 26.4, 2, 4.0, 8.3);
-        BoltGroup b3 = add("BOLT3", 56, 26.4, 56, 21.6, 5, 1.0, 2.4);
-        BoltGroup b4 = add("BOLT4", 64, 26.4, 64, 21.6, 5, 1.0, 2.4);
+        BoltGroup b1 = add("BOLT1", 100, 26.4, 108, 26.4, 8, 1.0, 2.4);
+        add("BOLT2", 100, 26.4, 108, 26.4, 2, 4.0, 8.3);
+        BoltGroup b3 = add("BOLT3", 100, 26.4, 100, 21.6, 5, 1.0, 2.4);
+        BoltGroup b4 = add("BOLT4", 108, 26.4, 108, 21.6, 5, 1.0, 2.4);
         angle(b1, 0, 105);
         angle(b1, 7, 75);
         angle(b3, 0, -195);
