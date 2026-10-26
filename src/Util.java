@@ -168,29 +168,55 @@ public class Util {
         return sb.toString();
     }
 
+    /** gen edge 边长占方格对角线的比例。取 60%：大于半对角线，可迫使每个方格沿两条对角线
+     *  切成四个三角单元（呈叉形），又小于对角线本身，避免单元跨格。 */
+    public static final double MESH_EDGE_DIAGONAL_RATIO = 0.60;
+
     /**
-     * 生成网格划分（gen edge）命令。边长取矩形中心到顶点的距离（半对角线）。
+     * 生成网格划分（gen edge）命令。边长取方格对角线的 60%。
+     * 方格尺寸取自该层节理组（0° 决定行高、90° 决定列宽），与 jset 命令同源，
+     * 不使用层配置里的 meshSize，避免两者不一致时网格与节理错位。
      * @param heightList 高度数组（从高到低）
-     * @param spacingList 节理间距数组（从顶到底）
+     * @param layerJoints 每层的节理组
+     * @param fallbackSpacing 某层缺少对应角度节理时的备用间距（通常是 meshSize）
      * @param modelLength 模型总长
      * @return gen edge 命令字符串
      */
-    public static String generateMeshCommands(double[] heightList, double[] spacingList, double modelLength) {
+    public static String generateMeshCommands(double[] heightList,
+                                              java.util.List<java.util.List<JointSet>> layerJoints,
+                                              double[] fallbackSpacing,
+                                              double modelLength) {
         StringBuilder sb = new StringBuilder();
 
         // 顺序遍历，从最顶层开始往下
-        for (int i = 0; i < spacingList.length; i++) {
+        for (int i = 0; i < fallbackSpacing.length; i++) {
             double top = heightList[i];
             double bottom = heightList[i + 1];
-            double width = layerWidthSpacing(i, spacingList[i]);
-            double height = layerHeightSpacing(i, spacingList[i]);
-            double edge = Math.hypot(width / 2.0, height / 2.0);
+            java.util.List<JointSet> sets = layerJoints != null && i < layerJoints.size()
+                    ? layerJoints.get(i) : null;
+            double width = layerWidthSpacing(i,
+                    jointSpacingForAngle(sets, 90.0, fallbackSpacing[i]));
+            double height = layerHeightSpacing(i,
+                    jointSpacingForAngle(sets, 0.0, fallbackSpacing[i]));
+            double edge = MESH_EDGE_DIAGONAL_RATIO * Math.hypot(width, height);
 
             //gen edge 1.4142 range 0 150.00 59.60 62.30
             sb.append(String.format("gen edge %.4f range 0 %.2f %.2f %.2f\n",
                     edge, modelLength, bottom, top));
         }
         return sb.toString();
+    }
+
+    /** 取该层指定角度的节理间距；优先基础组，其次同角度任意组，最后回退。 */
+    private static double jointSpacingForAngle(java.util.List<JointSet> sets, double angle, double fallback) {
+        if (sets == null) return fallback;
+        for (JointSet js : sets) {
+            if (js.baseGroup && Math.abs(js.angle - angle) < 1e-6) return js.spacing;
+        }
+        for (JointSet js : sets) {
+            if (Math.abs(js.angle - angle) < 1e-6) return js.spacing;
+        }
+        return fallback;
     }
 
     /**
@@ -291,7 +317,7 @@ public class Util {
 
     /**
      * 按每一层的节理组生成 jset 命令。输入间距只作期望值，
-     * 0° 用高度间距、90° 用宽度间距；网格用 gen edge，边长取矩形半对角线。
+     * 0° 用高度间距、90° 用宽度间距；网格用 gen edge，边长取方格对角线的 60%。
      */
     public static String generateJsetsFromLayers(double[] heightList, java.util.List<java.util.List<JointSet>> layerJoints,
                                                  double modelLength) {

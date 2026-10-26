@@ -57,6 +57,8 @@ Bolt groups can be bound to an excavation layer's open-off cut (`开切眼`); th
 
 Layers crossed by an excavation use a square-adaptive joint grid: row height follows the excavation's overlap height, column width is the nearest model-length divisor, and the grid phase follows the excavation's lower-left corner. Dragging any region corner updates the grid on the next repaint.
 
+Mesh size (`gen edge`) is 60% of the joint cell diagonal, not half of it. The value sits above the half-diagonal and below the diagonal, which forces UDEC to split each cell along both diagonals into four triangular zones instead of leaving a single poorly shaped quad. The ratio is `Util.MESH_EDGE_DIAGONAL_RATIO`.
+
 ## Tests
 
 Compile all sources and tests, then run the test classes from the project root:

@@ -19,7 +19,8 @@ public class Step2 {
             writer.write("restore " + base + "/dat/step_1.sav\n");
             writer.write("\n");
 
-            writer.write(Util.generateMeshCommands(ParameterList.heightList, ParameterList.spacing, ParameterList.modelLength));
+            writer.write(Util.generateMeshCommands(ParameterList.heightList, ParameterList.layerJoints,
+                    ParameterList.spacing, ParameterList.modelLength));
             writer.write("\n");
 
             writer.write(Util.generateMatCommands(
