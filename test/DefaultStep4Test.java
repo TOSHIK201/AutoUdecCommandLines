@@ -25,7 +25,7 @@ public class DefaultStep4Test {
                 "prop mat 11 cb_ymod 2.0e+11 cb_dens 7850 cb_yield 5.1e+08 cb_ycomp 5.1e+08"));
         check("grout props", text.contains(
                 "prop mat 12 cb_kbond 3.6e+07 cb_sbond 1.6e+07"));
-        check("cut9 plot", text.contains("plot syy fill block white cable blue"));
+        check("cut9 plot", text.contains("plot syy fill projected block white cable blue"));
         check("cut9 log", text.contains("after_state_3_9_pline1_ydis.log"));
         check("no unbal", !text.contains("hist unbal"));
         System.out.println("DEFAULT STEP4 PASSED");

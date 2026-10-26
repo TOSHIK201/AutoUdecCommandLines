@@ -41,8 +41,12 @@ public class LayerCanvas extends JPanel {
     private int resizeIndex = -1;
     private int resizeCorner = -1;
     private double resizeFixedX, resizeFixedY;
+    private double resizeOffsetX, resizeOffsetY;
     private List<List<double[]>> jointCache;
     private long jointSignature;
+    private double jointCacheScale = 1.0;
+    private boolean zooming;
+    private final javax.swing.Timer zoomTimer;
     private Double boltX1, boltY1;
     private Double plineX1, plineY1;
     private Supplier<BoltGroup> boltFactory;
@@ -65,11 +69,18 @@ public class LayerCanvas extends JPanel {
     private static final Font FONT_11 = new Font("微软雅黑", Font.PLAIN, 11);
     private static final Font FONT_BOLD_12 = new Font("微软雅黑", Font.BOLD, 12);
     private static final Font FONT_GRID = new Font("Arial", Font.PLAIN, 10);
+    private static final double HANDLE_SNAP_PIXELS = 8.0;
+    private static final double MIN_REGION_HEIGHT = 0.1;
     private final java.util.List<java.util.function.IntConsumer> selectionListeners = new java.util.ArrayList<>();
 
     public LayerCanvas(PropertyPanel propertyPanel) {
         this.propertyPanel = propertyPanel;
         setBackground(BG);
+        zoomTimer = new javax.swing.Timer(140, e -> {
+            zooming = false;
+            repaint();
+        });
+        zoomTimer.setRepeats(false);
         setFocusable(true);
         setLayout(null);
         snapToggle.setOpaque(false);
@@ -226,10 +237,23 @@ public class LayerCanvas extends JPanel {
                     double x2 = Math.max(region.x1, region.x2);
                     double y1 = Math.min(region.y1, region.y2);
                     double y2 = Math.max(region.y1, region.y2);
-                    if (resizeCorner == 0) { resizeFixedX = x2; resizeFixedY = y2; }
-                    else if (resizeCorner == 1) { resizeFixedX = x1; resizeFixedY = y2; }
-                    else if (resizeCorner == 2) { resizeFixedX = x1; resizeFixedY = y1; }
-                    else { resizeFixedX = x2; resizeFixedY = y1; }
+                    double cornerX;
+                    double cornerY;
+                    if (resizeCorner == 0) {
+                        resizeFixedX = x2; resizeFixedY = y2;
+                        cornerX = x1; cornerY = y1;
+                    } else if (resizeCorner == 1) {
+                        resizeFixedX = x1; resizeFixedY = y2;
+                        cornerX = x2; cornerY = y1;
+                    } else if (resizeCorner == 2) {
+                        resizeFixedX = x1; resizeFixedY = y1;
+                        cornerX = x2; cornerY = y2;
+                    } else {
+                        resizeFixedX = x2; resizeFixedY = y1;
+                        cornerX = x1; cornerY = y2;
+                    }
+                    resizeOffsetX = cornerX - mouseWorldX;
+                    resizeOffsetY = cornerY - mouseWorldY;
                     UndoManager.push();
                     return;
                 }
@@ -280,6 +304,7 @@ public class LayerCanvas extends JPanel {
                 if (resizeIndex >= 0) {
                     resizeIndex = -1;
                     resizeCorner = -1;
+                    snapY = null;
                     if (excavationEdited != null) excavationEdited.run();
                     repaint();
                     return;
@@ -364,9 +389,12 @@ public class LayerCanvas extends JPanel {
                 if (activeStage == 3 && (boltToggle.isSelected() || plineToggle.isSelected())) return;
                 if (activeStage == 0 && resizeIndex >= 0
                         && resizeIndex < ParameterList.excavationLayers.size()) {
-                    updateMouse(e.getX(), e.getY());
-                    double wx = snapX != null ? snapX : mouseWorldX;
-                    double wy = snapY != null ? snapY : mouseWorldY;
+                    updateMouse(e.getX(), e.getY(), false);
+                    double wx = mouseWorldX + resizeOffsetX;
+                    double rawY = mouseWorldY + resizeOffsetY;
+                    boolean top = resizeCorner == 2 || resizeCorner == 3;
+                    double wy = snapExcavationY(rawY, resizeFixedY, top);
+                    if (Math.abs(wy - rawY) > 1e-9) snapY = wy;
                     ExcavationLayer region = ParameterList.excavationLayers.get(resizeIndex);
                     region.x1 = Math.min(resizeFixedX, wx);
                     region.x2 = Math.max(resizeFixedX, wx);
@@ -395,16 +423,20 @@ public class LayerCanvas extends JPanel {
             }
         });
 
-        addMouseWheelListener(e -> {
-            double wx = toWorldX(e.getX());
-            double wy = toWorldY(e.getY());
-            double factor = e.getWheelRotation() < 0 ? 1.12 : 1.0 / 1.12;
-            scale = Math.max(0.05, Math.min(80.0, scale * factor));
-            originX = e.getX() - wx * scale;
-            originY = getHeight() - e.getY() - wy * scale;
-            updateMouse(e.getX(), e.getY());
-            repaint();
-        });
+        addMouseWheelListener(e -> zoomAt(e.getX(), e.getY(), e.getWheelRotation()));
+    }
+
+    void zoomAt(int x, int y, int rotation) {
+        double wx = toWorldX(x);
+        double wy = toWorldY(y);
+        double factor = rotation < 0 ? 1.12 : 1.0 / 1.12;
+        scale = Math.max(0.05, Math.min(80.0, scale * factor));
+        originX = x - wx * scale;
+        originY = getHeight() - y - wy * scale;
+        zooming = true;
+        zoomTimer.restart();
+        updateMouse(x, y);
+        repaint();
     }
 
     public void setStatusLabel(JLabel label) { this.statusLabel = label; }
@@ -677,6 +709,32 @@ public class LayerCanvas extends JPanel {
     }
 
     private void updateMouse(int sx, int sy) {
+        updateMouse(sx, sy, true);
+    }
+
+    private double snapExcavationY(double y, double fixedY, boolean top) {
+        double tolerance = Math.min(HANDLE_SNAP_PIXELS / scale, 0.5);
+        double snapped = y;
+        double best = tolerance;
+        if (ParameterList.heightList == null) return snapped;
+        for (double h : ParameterList.heightList) {
+            if (top) {
+                if (h <= fixedY + MIN_REGION_HEIGHT) continue;
+            } else {
+                if (h >= fixedY - MIN_REGION_HEIGHT) continue;
+            }
+            double distance = Math.abs(h - y);
+            if (distance <= best) {
+                best = distance;
+                snapped = h;
+            }
+        }
+        return top
+                ? Math.max(snapped, fixedY + MIN_REGION_HEIGHT)
+                : Math.min(snapped, fixedY - MIN_REGION_HEIGHT);
+    }
+
+    private void updateMouse(int sx, int sy, boolean allowSnap) {
         mouseScreenX = sx;
         mouseScreenY = sy;
         mouseWorldX = toWorldX(sx);
@@ -684,7 +742,7 @@ public class LayerCanvas extends JPanel {
         snapX = null;
         snapY = null;
         double tol = 12.0 / scale;
-        if (snapToggle.isSelected()) {
+        if (allowSnap && snapToggle.isSelected()) {
             snapY = SnapTargets.nearest(mouseWorldY, SnapTargets.yTargets(mouseWorldX, tol), tol);
             snapX = SnapTargets.nearest(mouseWorldX, SnapTargets.xTargets(mouseWorldY, tol), tol);
         }
@@ -1064,8 +1122,14 @@ public class LayerCanvas extends JPanel {
     private void ensureJointCache() {
         long signature = jointSignature();
         if (jointCache != null && signature == jointSignature) return;
+        if (jointCache != null && zooming && !zoomDensityChanged()) return;
         jointCache = JointGeometry.build(scale);
         jointSignature = signature;
+        jointCacheScale = scale;
+    }
+
+    private boolean zoomDensityChanged() {
+        return Math.abs(Math.log(scale / jointCacheScale)) > Math.log(2.0);
     }
 
     private long jointSignature() {
@@ -1104,8 +1168,12 @@ public class LayerCanvas extends JPanel {
         }
         h = h * 31 + (ParameterList.debugMode ? 1 : 0);
         h = h * 31 + Double.doubleToLongBits(ParameterList.debugScale);
-        h = h * 31 + Math.round(scale * 100);
+        h = h * 31 + zoomBucket(scale);
         return h;
+    }
+
+    private static int zoomBucket(double scale) {
+        return (int) Math.round(Math.log(Math.max(0.05, scale)) / Math.log(1.25));
     }
 
     private void drawJoints(Graphics2D g2, int layerIndex) {

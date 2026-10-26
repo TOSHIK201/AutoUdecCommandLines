@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
 public class Step2 {
-    public static void step2(String path, boolean callNext) {
+    public static void step2(String path, boolean callNext) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.WRITE,
@@ -14,8 +14,9 @@ public class Step2 {
                 StandardOpenOption.TRUNCATE_EXISTING
                 )
         ) {
+            String base = ParameterList.normalizedOutputPath();
 
-            writer.write("restore " + ParameterList.outputPath + "/dat/step_1.save\n");
+            writer.write("restore " + base + "/dat/step_1.sav\n");
             writer.write("\n");
 
             writer.write(Util.generateMeshCommands(ParameterList.heightList, ParameterList.spacing, ParameterList.modelLength));
@@ -34,7 +35,7 @@ public class Step2 {
             ));
             writer.write("\n");
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_2.save\n");
+            writer.write("save " + base + "/dat/step_2.sav\n");
             for (PlotPreset preset : ParameterList.plotPresets2) {
                 if (preset.selected && preset.histCommand == null) {
                     writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
@@ -43,11 +44,9 @@ public class Step2 {
 
             if (callNext) {
                 writer.write("\n");
-                writer.write("call " + ParameterList.outputPath + "/code/step_3.dat\n");
+                writer.write("call " + base + "/code/step_3.dat\n");
             }
 
-        } catch (IOException e){
-            System.out.println("stp2():" + e.getMessage());
         }
     }
 }

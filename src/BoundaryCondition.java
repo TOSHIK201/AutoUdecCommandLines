@@ -65,6 +65,14 @@ public class BoundaryCondition {
         return Math.abs(ey - sy) > Math.abs(ex - sx);
     }
 
+    public boolean diagonal() {
+        double dx = Math.abs(ex - sx);
+        double dy = Math.abs(ey - sy);
+        double major = Math.max(dx, dy);
+        double minor = Math.min(dx, dy);
+        return minor > 1e-6 && minor > major * 0.05;
+    }
+
     // 线两侧按宽度展开成 UDEC range 矩形：竖向线展开 x，横向线展开 y。
     public double[] range() {
         if (verticalLine()) {

@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class BoltPanel extends JPanel {
+    private static final String ABSOLUTE = "绝对坐标";
     private final LayerCanvas canvas;
     private final DefaultListModel<BoltGroup> groups = new DefaultListModel<>();
     private final JList<BoltGroup> groupList = new JList<>(groups);
@@ -17,6 +18,8 @@ public class BoltPanel extends JPanel {
     private final JComboBox<Integer> cableMat = new JComboBox<>();
     private final JComboBox<Integer> groutMat = new JComboBox<>();
     private final JTextField rotate = new JTextField(5);
+    private final JComboBox<String> bindBox = new JComboBox<>();
+    private final JLabel bindHint = new JLabel("坐标为模型绝对坐标（m）");
     private final JTextField bAngle = new JTextField(5), bLength = new JTextField(5);
     private final JTextField bNodes = new JTextField(4), bArea = new JTextField(7);
     private final JTextField bPreten = new JTextField(7);
@@ -24,6 +27,7 @@ public class BoltPanel extends JPanel {
     private final JComboBox<Integer> bGroutMat = new JComboBox<>();
     private boolean binding;
     private Runnable onGroupsChanged;
+    private java.util.function.Consumer<BoltGroup> onGroupAdded;
 
     public BoltPanel(LayerCanvas canvas) {
         super(new BorderLayout());
@@ -56,13 +60,23 @@ public class BoltPanel extends JPanel {
         JPanel form = new JPanel(new GridBagLayout());
         form.setBorder(BorderFactory.createTitledBorder("锚杆组参数"));
         GridBagConstraints c = grid();
-        row(form, c, 0, "安装线 X1/Y1", x1, y1);
-        row(form, c, 1, "安装线 X2/Y2", x2, y2);
-        row(form, c, 2, "间排距(m)", spacing, "根数", count);
-        row(form, c, 3, "长度", length, "节点数", nodes);
-        row(form, c, 4, "面积", area, "预紧力", preten);
-        row(form, c, 5, "锚杆材料", cableMat, "锚固剂", groutMat);
-        singleRow(form, c, 6, "自动留空", gapLabel);
+        c.gridy = 0; c.gridx = 0;
+        form.add(new JLabel("位置绑定"), c);
+        c.gridx = 1; c.gridwidth = 3;
+        bindBox.setPreferredSize(new Dimension(220, 22));
+        bindBox.setToolTipText("绑定后坐标以开切眼起始下角为基准，开挖区域移动时锚杆随之移动");
+        form.add(bindBox, c);
+        c.gridwidth = 1;
+        c.gridy = 1; c.gridx = 0; c.gridwidth = 4;
+        form.add(bindHint, c);
+        c.gridwidth = 1;
+        row(form, c, 2, "安装线 X1/Y1", x1, y1);
+        row(form, c, 3, "安装线 X2/Y2", x2, y2);
+        row(form, c, 4, "间排距(m)", spacing, "根数", count);
+        row(form, c, 5, "长度", length, "节点数", nodes);
+        row(form, c, 6, "面积", area, "预紧力", preten);
+        row(form, c, 7, "锚杆材料", cableMat, "锚固剂", groutMat);
+        singleRow(form, c, 8, "自动留空", gapLabel);
         top.add(form, BorderLayout.CENTER);
         add(top, BorderLayout.NORTH);
 
@@ -101,12 +115,16 @@ public class BoltPanel extends JPanel {
 
         canvas.setBoltFactory(this::newFromForm);
         canvas.setBoltCreated(this::added);
+        bindBox.addActionListener(e -> {
+            if (!binding) switchBinding();
+        });
         refreshMaterialBoxes();
         reload();
     }
 
     public void reload() {
         refreshMaterialBoxes();
+        refreshBindBoxes();
         binding = true;
         groups.clear();
         for (BoltGroup g : ParameterList.boltGroups) groups.addElement(g);
@@ -134,8 +152,77 @@ public class BoltPanel extends JPanel {
         if (bg != null) bGroutMat.setSelectedItem(bg);
     }
 
+    private void refreshBindBoxes() {
+        boolean outer = binding;
+        binding = true;
+        Object keep = bindBox.getSelectedItem();
+        bindBox.removeAllItems();
+        bindBox.addItem(ABSOLUTE);
+        for (ExcavationLayer e : ParameterList.excavationLayers) bindBox.addItem(bindItem(e));
+        if (keep != null) bindBox.setSelectedItem(keep);
+        if (bindBox.getSelectedIndex() < 0) bindBox.setSelectedItem(ABSOLUTE);
+        binding = outer;
+    }
+
+    private void refreshBindSelection(BoltGroup g) {
+        if (!g.isBound()) {
+            bindBox.setSelectedItem(ABSOLUTE);
+            return;
+        }
+        String item = null;
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (e.name.equals(g.bindName)) {
+                item = bindItem(e);
+                break;
+            }
+        }
+        if (item == null) {
+            g.bindName = "";
+            bindBox.setSelectedItem(ABSOLUTE);
+            return;
+        }
+        if (((DefaultComboBoxModel<String>) bindBox.getModel()).getIndexOf(item) < 0) {
+            bindBox.addItem(item);
+        }
+        bindBox.setSelectedItem(item);
+    }
+
+    private void switchBinding() {
+        BoltGroup g = groupList.getSelectedValue();
+        if (g == null) {
+            refreshBindBoxes();
+            return;
+        }
+        UndoManager.push();
+        g.applyBinding();
+        String name = bindLayerName((String) bindBox.getSelectedItem());
+        g.bindName = name;
+        if (!name.isEmpty()) g.captureOffsets();
+        bindGroup();
+        canvas.repaint();
+    }
+
+    private String bindItem(ExcavationLayer e) {
+        return bindLabel(e.name) + " 开切眼";
+    }
+
+    private String bindLabel(String name) {
+        return name != null && name.matches("\\d+") ? name + "#" : name;
+    }
+
+    private String bindLayerName(String item) {
+        if (item == null || ABSOLUTE.equals(item)) return "";
+        int cut = item.indexOf(" 开切眼");
+        String name = cut > 0 ? item.substring(0, cut) : item;
+        return name.endsWith("#") ? name.substring(0, name.length() - 1) : name;
+    }
+
     public void setOnGroupsChanged(Runnable listener) {
         onGroupsChanged = listener;
+    }
+
+    public void setOnGroupAdded(java.util.function.Consumer<BoltGroup> listener) {
+        onGroupAdded = listener;
     }
 
     public void selectGroup(String groupName) {
@@ -154,6 +241,7 @@ public class BoltPanel extends JPanel {
 
     private BoltGroup newFromForm() {
         BoltGroup g = new BoltGroup("BOLT" + (ParameterList.boltGroups.size() + 1));
+        g.bindName = bindLayerName((String) bindBox.getSelectedItem());
         g.spacing = parse(spacing.getText(), 1.0);
         g.count = (int) parse(count.getText(), 5);
         g.length = parse(length.getText(), 2.4);
@@ -168,10 +256,12 @@ public class BoltPanel extends JPanel {
     private void added(BoltGroup g) {
         UndoManager.push();
         ParameterList.boltGroups.add(g);
+        if (g.isBound()) g.captureOffsets();
         g.rebuild();
         groups.addElement(g);
         groupList.setSelectedIndex(groups.size() - 1);
         Stage4Sync.syncBoltActions();
+        if (onGroupAdded != null) onGroupAdded.accept(g);
         if (onGroupsChanged != null) onGroupsChanged.run();
         canvas.repaint();
     }
@@ -208,10 +298,10 @@ public class BoltPanel extends JPanel {
         BoltGroup g = groupList.getSelectedValue();
         if (g == null) return;
         UndoManager.push();
-        g.x1 = parse(x1.getText(), g.x1);
-        g.y1 = parse(y1.getText(), g.y1);
-        g.x2 = parse(x2.getText(), g.x2);
-        g.y2 = parse(y2.getText(), g.y2);
+        double nx1 = parse(x1.getText(), g.isBound() ? g.bx1 : g.x1);
+        double ny1 = parse(y1.getText(), g.isBound() ? g.by1 : g.y1);
+        double nx2 = parse(x2.getText(), g.isBound() ? g.bx2 : g.x2);
+        double ny2 = parse(y2.getText(), g.isBound() ? g.by2 : g.y2);
         g.spacing = parse(spacing.getText(), g.spacing);
         g.count = (int) parse(count.getText(), g.count);
         g.length = parse(length.getText(), g.length);
@@ -220,7 +310,15 @@ public class BoltPanel extends JPanel {
         g.pretension = parse(preten.getText(), g.pretension);
         g.cableMat = selectedInt(cableMat, g.cableMat);
         g.groutMat = selectedInt(groutMat, g.groutMat);
-        g.rebuild();
+        if (g.isBound()) {
+            g.bx1 = nx1; g.by1 = ny1;
+            g.bx2 = nx2; g.by2 = ny2;
+            g.applyBinding();
+        } else {
+            g.x1 = nx1; g.y1 = ny1;
+            g.x2 = nx2; g.y2 = ny2;
+            g.rebuild();
+        }
         gapLabel.setText(gapText(g));
         refreshBolts(g);
         canvas.repaint();
@@ -234,8 +332,16 @@ public class BoltPanel extends JPanel {
             return;
         }
         binding = true;
-        x1.setText(fmt(g.x1)); y1.setText(fmt(g.y1));
-        x2.setText(fmt(g.x2)); y2.setText(fmt(g.y2));
+        refreshBindSelection(g);
+        if (g.isBound()) {
+            x1.setText(fmt(g.bx1)); y1.setText(fmt(g.by1));
+            x2.setText(fmt(g.bx2)); y2.setText(fmt(g.by2));
+            bindHint.setText("坐标相对 " + bindLabel(g.bindName) + " 起始下角（m）");
+        } else {
+            x1.setText(fmt(g.x1)); y1.setText(fmt(g.y1));
+            x2.setText(fmt(g.x2)); y2.setText(fmt(g.y2));
+            bindHint.setText("坐标为模型绝对坐标（m）");
+        }
         spacing.setText(fmt(g.spacing));
         count.setText(String.valueOf(g.count));
         length.setText(fmt(g.length));
@@ -305,6 +411,8 @@ public class BoltPanel extends JPanel {
 
     private void clearGroupForm() {
         binding = true;
+        bindBox.setSelectedItem(ABSOLUTE);
+        bindHint.setText("坐标为模型绝对坐标（m）");
         x1.setText(""); y1.setText(""); x2.setText(""); y2.setText("");
         spacing.setText(fmt(ParameterList.boltSpacing));
         count.setText(String.valueOf(ParameterList.boltCount));

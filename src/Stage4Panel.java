@@ -30,12 +30,14 @@ public class Stage4Panel extends JPanel {
     private JButton collapse;
     private boolean collapsed;
     private boolean binding;
+    private Stage4Action pendingBoltAnchor;
 
     public Stage4Panel(LayerCanvas canvas) {
         super(new BorderLayout());
         this.canvas = canvas;
         bolts = new BoltPanel(canvas);
         bolts.setOnGroupsChanged(this::reload);
+        bolts.setOnGroupAdded(this::boltGroupAdded);
         plines = new PlinePanel(canvas);
         for (PlotPreset p : ParameterList.plotPresets4) plotCombo.addItem(p.label);
         plotRows.setLayout(new BoxLayout(plotRows, BoxLayout.Y_AXIS));
@@ -474,7 +476,11 @@ public class Stage4Panel extends JPanel {
     }
 
     private String autoLogName(Integer pline, String data, Stage4Action self) {
-        String context = lastExcavationGroup();
+        return autoLogName(pline, data, self, ParameterList.stage4Actions.indexOf(self));
+    }
+
+    private String autoLogName(Integer pline, String data, Stage4Action self, int contextIndex) {
+        String context = lastExcavationGroup(contextIndex);
         StringBuilder sb = new StringBuilder("after_");
         sb.append(context.replaceAll("[^A-Za-z0-9_\\-]+", "_"));
         if (pline != null) sb.append("_pline").append(pline);
@@ -515,6 +521,7 @@ public class Stage4Panel extends JPanel {
 
     private void add(Stage4Action.Type type) {
         if (type == Stage4Action.Type.BOLT) {
+            pendingBoltAnchor = list.getSelectedValue();
             Stage4Sync.syncBoltActions();
             reload();
             int index = lastBoltActionIndex();
@@ -526,6 +533,8 @@ public class Stage4Panel extends JPanel {
             canvas.setBoltMode(true);
             return;
         }
+        pendingBoltAnchor = null;
+        int insert = list.getSelectedIndex();
         UndoManager.push();
         Stage4Action a = new Stage4Action(type);
         if (type == Stage4Action.Type.EXCAVATE) a.group = (String) group.getSelectedItem();
@@ -533,10 +542,12 @@ public class Stage4Panel extends JPanel {
         if (type == Stage4Action.Type.LOG) {
             a.pline = ParameterList.plines.isEmpty() ? null : 1;
             a.data = "ydis";
-            a.name = autoLogName(a.pline, a.data, a);
+            a.name = autoLogName(a.pline, a.data, a,
+                    insert >= 0 ? insert : ParameterList.stage4Actions.size() - 1);
         }
         if (type == Stage4Action.Type.PLOT) {
-            String context = lastExcavationGroup();
+            String context = lastExcavationGroup(
+                    insert >= 0 ? insert : ParameterList.stage4Actions.size() - 1);
             a.name = "after_" + context;
             if (context.contains("openOffCut")) {
                 addPlotLabels(a, "块体+锚杆");
@@ -548,9 +559,50 @@ public class Stage4Panel extends JPanel {
             a.cableMat = ParameterList.cableMaterial();
             a.groutMat = ParameterList.groutMaterial();
         }
-        ParameterList.stage4Actions.add(a);
-        model.addElement(a);
-        list.setSelectedIndex(model.size() - 1);
+        if (insert >= 0) {
+            int position = Math.min(insert + 1, ParameterList.stage4Actions.size());
+            ParameterList.stage4Actions.add(position, a);
+            model.add(position, a);
+            list.setSelectedIndex(position);
+        } else {
+            ParameterList.stage4Actions.add(a);
+            model.addElement(a);
+            list.setSelectedIndex(model.size() - 1);
+        }
+    }
+
+    private void boltGroupAdded(BoltGroup g) {
+        int target = -1;
+        if (pendingBoltAnchor != null) {
+            int anchor = ParameterList.stage4Actions.indexOf(pendingBoltAnchor);
+            if (anchor >= 0) target = anchor + 1;
+        }
+        pendingBoltAnchor = null;
+        int from = boltActionIndex(g.name);
+        if (from >= 0) {
+            Stage4Action a = ParameterList.stage4Actions.remove(from);
+            int position;
+            if (target < 0) {
+                position = ParameterList.stage4Actions.size();
+            } else {
+                if (from < target) target--;
+                position = Math.max(0, Math.min(target, ParameterList.stage4Actions.size()));
+            }
+            ParameterList.stage4Actions.add(position, a);
+            Stage4Sync.syncBoltActions();
+        }
+        reload();
+        int index = boltActionIndex(g.name);
+        if (index >= 0) list.setSelectedIndex(index);
+    }
+
+    private int boltActionIndex(String name) {
+        if (name == null) return -1;
+        for (int i = 0; i < ParameterList.stage4Actions.size(); i++) {
+            Stage4Action a = ParameterList.stage4Actions.get(i);
+            if (a.type == Stage4Action.Type.BOLT && name.equals(a.name)) return i;
+        }
+        return -1;
     }
 
     private void move(int delta) {
@@ -600,8 +652,9 @@ public class Stage4Panel extends JPanel {
         return -1;
     }
 
-    private String lastExcavationGroup() {
-        for (int i = ParameterList.stage4Actions.size() - 1; i >= 0; i--) {
+    private String lastExcavationGroup(int fromIndex) {
+        int start = Math.min(fromIndex, ParameterList.stage4Actions.size() - 1);
+        for (int i = start; i >= 0; i--) {
             Stage4Action a = ParameterList.stage4Actions.get(i);
             if (a.type == Stage4Action.Type.EXCAVATE
                     && a.group != null && !a.group.trim().isEmpty()) {

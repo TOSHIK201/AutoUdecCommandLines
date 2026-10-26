@@ -4,6 +4,9 @@ import java.util.List;
 public class BoltGroup {
     public String name;
     public double x1, y1, x2, y2;
+    // 绑定开挖区域：bindName 为开挖层名（如 "9"），空串表示绝对坐标
+    public String bindName = "";
+    public double bx1, by1, bx2, by2;
     public int count = ParameterList.boltCount;
     public double spacing = ParameterList.boltSpacing;
     public double endOffset = 0.0;
@@ -75,6 +78,65 @@ public class BoltGroup {
         }
         bolts.clear();
         bolts.addAll(next);
+    }
+
+    public boolean isBound() {
+        return bindName != null && !bindName.isEmpty();
+    }
+
+    public ExcavationLayer boundLayer() {
+        if (!isBound()) return null;
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (bindName.equals(e.name)) return e;
+        }
+        return null;
+    }
+
+    // 开切眼起始下角：左向开挖取左下角，右向开挖取右下角
+    public static double anchorX(ExcavationLayer e) {
+        double left = Math.min(e.x1, e.x2);
+        double right = Math.max(e.x1, e.x2);
+        return e.direction == Util.Direction.RIGHT_TO_LEFT ? right : left;
+    }
+
+    public static double anchorY(ExcavationLayer e) {
+        return Math.min(e.y1, e.y2);
+    }
+
+    public void captureOffsets() {
+        ExcavationLayer e = boundLayer();
+        if (e == null) {
+            bindName = "";
+            return;
+        }
+        double ax = anchorX(e);
+        double ay = anchorY(e);
+        bx1 = x1 - ax;
+        by1 = y1 - ay;
+        bx2 = x2 - ax;
+        by2 = y2 - ay;
+    }
+
+    public void applyBinding() {
+        ExcavationLayer e = boundLayer();
+        if (e == null) {
+            bindName = "";
+            return;
+        }
+        double ax = anchorX(e);
+        double ay = anchorY(e);
+        x1 = ax + bx1;
+        y1 = ay + by1;
+        x2 = ax + bx2;
+        y2 = ay + by2;
+        rebuild();
+    }
+
+    @Override
+    public String toString() {
+        if (!isBound()) return name;
+        String label = bindName.matches("\\d+") ? bindName + "#" : bindName;
+        return name + "（绑定 " + label + " 开切眼）";
     }
 
     public void applyDefaultsTo(Bolt b) {

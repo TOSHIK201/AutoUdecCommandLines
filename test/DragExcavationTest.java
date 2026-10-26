@@ -41,6 +41,7 @@ public class DragExcavationTest {
             int h = canvas.getHeight();
             int hx = (int) Math.round(canvas.getOriginX() + made[0].x2 * scale);
             int hy = (int) Math.round(h - canvas.getOriginY() - made[0].y2 * scale);
+            double offsetX = made[0].x2 - ((hx - canvas.getOriginX()) / scale);
             canvas.dispatchEvent(new MouseEvent(canvas, MouseEvent.MOUSE_PRESSED, now + 100,
                     InputEvent.BUTTON1_DOWN_MASK, hx, hy, 1, false, MouseEvent.BUTTON1));
             canvas.dispatchEvent(new MouseEvent(canvas, MouseEvent.MOUSE_DRAGGED, now + 110,
@@ -48,6 +49,12 @@ public class DragExcavationTest {
             canvas.dispatchEvent(new MouseEvent(canvas, MouseEvent.MOUSE_RELEASED, now + 120,
                     0, hx - 60, hy + 20, 1, false, MouseEvent.BUTTON1));
             if (Math.abs(made[0].x2 - oldX2) < 0.1) throw new AssertionError("角点拖动未生效");
+            double rawX2 = ((hx - 60) - canvas.getOriginX()) / canvas.getScale() + offsetX;
+            double expectedX2 = Math.max(made[0].x1, rawX2);
+            if (Math.abs(made[0].x2 - expectedX2) > 1e-6) {
+                throw new AssertionError("拖动被吸附打断: x2=" + made[0].x2
+                        + " expected=" + expectedX2);
+            }
             System.out.println("HANDLE TEST PASSED: x2 " + oldX2 + " -> " + made[0].x2);
         });
     }

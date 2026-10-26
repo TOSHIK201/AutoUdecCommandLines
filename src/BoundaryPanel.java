@@ -25,7 +25,7 @@ public class BoundaryPanel extends JPanel {
 
         JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
         JButton draw = new JButton("绘制边界");
-        draw.setToolTipText("在画布上点两个点，生成一条边界线");
+        draw.setToolTipText("两点定义输入线；UDEC 按矩形 range 生效，斜线取较长方向条带近似");
         draw.addActionListener(e -> canvas.setBoundaryMode(true));
         JButton delete = new JButton("删除选中");
         delete.addActionListener(e -> deleteSelected());

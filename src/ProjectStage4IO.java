@@ -21,6 +21,9 @@ class ProjectStage4IO {
             out.writeDouble(g.area);
             out.writeDouble(g.pretension);
             out.writeDouble(g.baseAngle);
+            out.writeUTF(g.bindName == null ? "" : g.bindName);
+            out.writeDouble(g.bx1); out.writeDouble(g.by1);
+            out.writeDouble(g.bx2); out.writeDouble(g.by2);
             out.writeInt(g.bolts.size());
             for (Bolt b : g.bolts) {
                 out.writeDouble(b.sx); out.writeDouble(b.sy);
@@ -104,6 +107,11 @@ class ProjectStage4IO {
             g.area = in.readDouble();
             g.pretension = in.readDouble();
             g.baseAngle = in.readDouble();
+            if (version >= 11) {
+                g.bindName = in.readUTF();
+                g.bx1 = in.readDouble(); g.by1 = in.readDouble();
+                g.bx2 = in.readDouble(); g.by2 = in.readDouble();
+            }
             int boltCount = in.readInt();
             g.bolts.clear();
             for (int k = 0; k < boltCount; k++) {

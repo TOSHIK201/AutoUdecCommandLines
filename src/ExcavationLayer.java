@@ -36,4 +36,21 @@ public class ExcavationLayer {
         if (stepDist <= 1e-9) return 1;
         return Math.max(1, (int) Math.ceil(usable / stepDist - 1e-9));
     }
+
+    // 按当前切眼宽度、步距与步数居中，并取煤层全厚；只应用一次
+    public void applyCoalSeam(double modelLength, double bottomY, double thickness) {
+        double cw = Math.max(cutWidth, 0);
+        double total = cw + Math.max(steps, 0) * Math.max(stepDist, 0);
+        if (total <= 0) total = cw;
+        double left = (modelLength - total) / 2.0;
+        x1 = left;
+        x2 = left + total;
+        y1 = bottomY;
+        y2 = bottomY + Math.max(thickness, 0);
+        centered = true;
+        originX = Double.NaN;
+        originY = Double.NaN;
+        overallHeight = Math.max(thickness, 0);
+        autoGeometry = false;
+    }
 }

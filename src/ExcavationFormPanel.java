@@ -18,7 +18,10 @@ public class ExcavationFormPanel extends JPanel {
     private final JTextField y1 = new JTextField(6);
     private final JTextField x2 = new JTextField(6);
     private final JTextField y2 = new JTextField(6);
-    private final JLabel steps = new JLabel();
+    private final JTextField steps = new JTextField(6);
+    private final JLabel stepsHint = new JLabel();
+    private final JButton coal = new JButton("开挖煤层");
+    private Runnable coalAction;
     private boolean binding;
 
     public ExcavationFormPanel(LayerCanvas canvas, JList<ExcavationLayer> list,
@@ -46,22 +49,33 @@ public class ExcavationFormPanel extends JPanel {
         c.gridwidth = 3;
         put(c, 1, 3, direction);
         c.gridwidth = 1;
-        put(c, 0, 4, new JLabel("X1 / Y1"));
-        put(c, 1, 4, x1, 75);
-        put(c, 2, 4, y1, 75);
-        put(c, 0, 5, new JLabel("X2 / Y2"));
-        put(c, 1, 5, x2, 75);
-        put(c, 2, 5, y2, 75);
-        put(c, 0, 6, new JLabel("步数"));
-        c.gridwidth = 3;
-        put(c, 1, 6, steps);
+        put(c, 0, 4, new JLabel("开挖步数"));
+        put(c, 1, 4, steps, 80);
+        c.gridwidth = 2;
+        put(c, 2, 4, stepsHint);
         c.gridwidth = 1;
+        put(c, 0, 5, new JLabel("X1 / Y1"));
+        put(c, 1, 5, x1, 75);
+        put(c, 2, 5, y1, 75);
+        put(c, 0, 6, new JLabel("X2 / Y2"));
+        put(c, 1, 6, x2, 75);
+        put(c, 2, 6, y2, 75);
+        c.gridy = 7; c.gridx = 0; c.gridwidth = 4;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        coal.setToolTipText("按当前切眼宽度、步距与步数居中，并开采全厚煤层（只应用一次）");
+        coal.addActionListener(e -> {
+            if (coalAction != null) coalAction.run();
+        });
+        add(coal, c);
+        c.gridwidth = 1;
+        c.fill = GridBagConstraints.NONE;
 
         bindName();
         preset.addActionListener(e -> applyType());
         direction.addActionListener(e -> applyType());
         bindDouble(cutWidth, v -> edit(item -> item.cutWidth = v, true));
         bindDouble(stepDist, v -> edit(item -> item.stepDist = v, true));
+        bindInt(steps, this::setSteps);
         bindDouble(x1, v -> edit(item -> item.x1 = v, false));
         bindDouble(y1, v -> edit(item -> item.y1 = v, false));
         bindDouble(x2, v -> edit(item -> item.x2 = v, false));
@@ -73,8 +87,21 @@ public class ExcavationFormPanel extends JPanel {
         e.preset = String.valueOf(preset.getSelectedItem());
         e.cutWidth = parse(cutWidth.getText(), ParameterList.cutWidth);
         e.stepDist = parse(stepDist.getText(), ParameterList.stepDist);
+        e.steps = Math.max(0, (int) parse(steps.getText(), ParameterList.step));
         e.direction = (Util.Direction) direction.getSelectedItem();
         return e;
+    }
+
+    public void setCoalAction(Runnable action) {
+        coalAction = action;
+    }
+
+    public void applyParamsTo(ExcavationLayer e) {
+        e.preset = String.valueOf(preset.getSelectedItem());
+        e.cutWidth = parse(cutWidth.getText(), e.cutWidth);
+        e.stepDist = parse(stepDist.getText(), e.stepDist);
+        e.steps = Math.max(0, (int) parse(steps.getText(), e.steps));
+        e.direction = (Util.Direction) direction.getSelectedItem();
     }
 
     private String nextName() {
@@ -145,7 +172,8 @@ public class ExcavationFormPanel extends JPanel {
         y1.setText(fmt(Math.min(e.y1, e.y2)));
         x2.setText(fmt(Math.max(e.x1, e.x2)));
         y2.setText(fmt(Math.max(e.y1, e.y2)));
-        steps.setText(e.stepCount() + " 步（按区域自动）");
+        steps.setText(String.valueOf(e.steps));
+        stepsHint.setText("区域实际 " + e.stepCount() + " 步");
         binding = false;
     }
 
@@ -154,11 +182,12 @@ public class ExcavationFormPanel extends JPanel {
         name.setText("");
         cutWidth.setText(fmt(ParameterList.cutWidth));
         stepDist.setText(fmt(ParameterList.stepDist));
+        steps.setText(String.valueOf(ParameterList.step));
+        stepsHint.setText("");
         x1.setText("");
         y1.setText("");
         x2.setText("");
         y2.setText("");
-        steps.setText("");
         binding = false;
     }
 
@@ -169,6 +198,15 @@ public class ExcavationFormPanel extends JPanel {
         UndoManager.push();
         e.preset = String.valueOf(preset.getSelectedItem());
         e.direction = (Util.Direction) direction.getSelectedItem();
+        ParameterList.refreshBoltBindings();
+        refreshItem();
+    }
+
+    private void setSteps(int value) {
+        ExcavationLayer e = list.getSelectedValue();
+        if (e == null) return;
+        e.steps = Math.max(0, value);
+        if (e.autoGeometry) ParameterList.syncExcavationGeometry();
         refreshItem();
     }
 
@@ -190,6 +228,7 @@ public class ExcavationFormPanel extends JPanel {
         } else if (e.autoGeometry) {
             ParameterList.syncExcavationGeometry();
         }
+        ParameterList.refreshBoltBindings();
         refreshItem();
     }
 
@@ -197,7 +236,8 @@ public class ExcavationFormPanel extends JPanel {
         int index = list.getSelectedIndex();
         if (index < 0) return;
         ExcavationLayer e = model.get(index);
-        steps.setText(e.stepCount() + " 步（按区域自动）");
+        steps.setText(String.valueOf(e.steps));
+        stepsHint.setText("区域实际 " + e.stepCount() + " 步");
         model.set(index, e);
         canvas.setSelectedExcavation(index);
         canvas.repaint();
@@ -218,6 +258,27 @@ public class ExcavationFormPanel extends JPanel {
             }
         });
         field.addActionListener(e -> saveDouble(field, setter));
+    }
+
+    private void bindInt(JTextField field, java.util.function.IntConsumer setter) {
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusLost(java.awt.event.FocusEvent e) {
+                saveInt(field, setter);
+            }
+        });
+        field.addActionListener(e -> saveInt(field, setter));
+    }
+
+    private void saveInt(JTextField field, java.util.function.IntConsumer setter) {
+        if (binding) return;
+        String text = field.getText().trim();
+        if (text.isEmpty()) return;
+        try {
+            int value = Integer.parseInt(text);
+            UndoManager.push();
+            setter.accept(value);
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     private void saveDouble(JTextField field, DoubleConsumer setter) {

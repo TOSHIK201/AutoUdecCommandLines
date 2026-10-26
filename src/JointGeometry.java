@@ -19,6 +19,7 @@ class JointGeometry {
             double thickness = top - bottom;
             List<double[]> lines = new ArrayList<>();
             if (thickness > 0) {
+                double anchorY = Util.excavationStartY(i);
                 for (JointSet js : layer.joints) {
                     boolean vertical = Math.abs(js.angle - 90.0) < 1e-6;
                     double width = Util.layerWidthSpacing(i, js.spacing);
@@ -29,19 +30,20 @@ class JointGeometry {
                             Math.ceil(MIN_PIXELS / Math.max(1e-9, scale * height)));
 
                     if (Math.abs(js.angle) < 1e-6) {
-                        addHorizontal(lines, seen, bottom, top, stepY, modelLength);
+                        addHorizontal(lines, seen, bottom, top, stepY, modelLength,
+                                js.baseGroup ? anchorY : bottom);
                     } else if (vertical) {
                         if (js.baseGroup) {
-                            double rowHeight = thickness
-                                    / Math.max(1, Math.round(thickness / height + 1e-9));
+                            double rowHeight = height;
                             double rowStep = rowHeight * Math.max(1.0,
                                     Math.ceil(MIN_PIXELS / Math.max(1e-9, scale * rowHeight)));
                             double phase = Util.excavationPhase(i, width);
                             if (rowStep >= thickness) {
                                 addVertical(lines, seen, phase, modelLength, stepX, top, bottom);
                             } else {
-                                addBrickRows(lines, seen, phase, bottom, top, rowStep, stepX, modelLength);
-                                addBrickRows(lines, seen, phase + stepX / 2.0, bottom + rowStep,
+                                double startA = firstAtOrBelow(bottom, anchorY, rowStep * 2.0);
+                                addBrickRows(lines, seen, phase, startA, top, rowStep, stepX, modelLength);
+                                addBrickRows(lines, seen, phase + stepX / 2.0, startA + rowStep,
                                         top, rowStep, stepX, modelLength);
                             }
                         } else {
@@ -59,11 +61,17 @@ class JointGeometry {
 
     private static void addHorizontal(List<double[]> lines, Set<String> seen,
                                       double bottom, double top, double spacing,
-                                      double modelLength) {
+                                      double modelLength, double anchorY) {
         if (spacing <= 1e-9) return;
-        for (double y = bottom; y <= top + 1e-9; y += spacing) {
+        double start = anchorY + Math.ceil((bottom - anchorY) / spacing) * spacing;
+        for (double y = start; y <= top + 1e-9; y += spacing) {
             add(lines, seen, 0, y, modelLength, y);
         }
+    }
+
+    private static double firstAtOrBelow(double bottom, double anchor, double period) {
+        if (period <= 1e-9) return bottom;
+        return anchor + Math.floor((bottom - anchor) / period) * period;
     }
 
     private static void addBrickRows(List<double[]> lines, Set<String> seen, double startX,

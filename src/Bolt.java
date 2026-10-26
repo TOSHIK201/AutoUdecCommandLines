@@ -22,4 +22,9 @@ public class Bolt {
                 "cable %.4f %.4f %.4f %.4f %d %d %.2e %d %.1e",
                 sx, sy, ex(), ey(), nodes, cableMat, area, groutMat, pretension);
     }
+
+    @Override
+    public String toString() {
+        return String.format(java.util.Locale.ROOT, "(%.2f, %.2f)", sx, sy);
+    }
 }

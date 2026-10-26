@@ -57,6 +57,12 @@ public class BoundaryFormPanel extends JPanel {
         c.gridy = 6; c.gridx = 0; c.gridwidth = 4;
         add(gradientPanel, c);
         c.gridwidth = 1;
+        c.gridy = 7; c.gridx = 0; c.gridwidth = 4;
+        JLabel rangeHint = new JLabel("UDEC 边界按矩形 range 生效；斜线取较长方向条带近似");
+        rangeHint.setFont(rangeHint.getFont().deriveFont(11f));
+        rangeHint.setForeground(new Color(95, 95, 95));
+        add(rangeHint, c);
+        c.gridwidth = 1;
 
         typeBox.addActionListener(e -> applyType());
         bindDouble(valueField, v -> edit(item -> item.value = v));

@@ -284,7 +284,7 @@ public class Util {
         return "title\n" +
                 title + "\n" +
                 plotCmd + "\n" +
-                "set output " + ParameterList.outputPath + "/output/" + fileName + "\n" +
+                "set output " + ParameterList.normalizedOutputPath() + "/output/" + fileName + "\n" +
                 "set plot jpg size " + ParameterList.outputWidth + " " + ParameterList.outputHeight + "\n" +
                 "copy\n\n";
     }
@@ -310,10 +310,9 @@ public class Util {
                     continue;
                 }
                 double spacingMean = vertical ? widthSpacing : heightSpacing;
-                if (Math.abs(angle) < 1e-6 && js.baseGroup) {
-                    spacingMean = exactRowHeight(layerHeight, heightSpacing);
-                }
                 double startX = js.startX;
+                double startY = js.startY;
+                if (js.baseGroup) startY = excavationStartY(i);
                 double angleStd = js.angleStdDev;
                 double trace = js.traceLength;
                 double traceStd = js.traceStdDev;
@@ -328,9 +327,9 @@ public class Util {
                 sb.append("jset ").append(fAngle(angle)).append(' ').append(f2z(angleStd)).append(' ')
                         .append(f2a(trace)).append(' ').append(f2z(traceStd)).append(' ')
                         .append(f2z(gap)).append(' ').append(f2z(gapStd)).append(' ')
-                        .append(vertical ? f2a(spacingMean) : f4a(spacingMean)).append(' ')
+                        .append(f4a(spacingMean)).append(' ')
                         .append(f4z(js.spacingStdDev)).append(' ')
-                        .append(f4z(startX)).append(' ').append(f2a(js.startY))
+                        .append(f4z(startX)).append(' ').append(f4a(startY))
                         .append(" range jregion ").append(i + 1).append('\n');
             }
             sb.append('\n');
@@ -341,12 +340,12 @@ public class Util {
     private static void appendBrickJsets(StringBuilder sb, int layerIndex, JointSet js,
                                          double bottom, double widthSpacing) {
         double target = layerHeightSpacing(layerIndex, js.spacing);
-        double layerHeight = ParameterList.layers.get(layerIndex).thickness;
-        double rowHeight = exactRowHeight(layerHeight, target);
+        double rowHeight = target;
+        double startY = excavationStartY(layerIndex);
         double phase = excavationPhase(layerIndex, widthSpacing);
-        appendVerticalSet(sb, layerIndex, js, phase, bottom, rowHeight);
+        appendVerticalSet(sb, layerIndex, js, phase, startY, rowHeight);
         appendVerticalSet(sb, layerIndex, js, phase + widthSpacing / 2.0,
-                bottom + rowHeight, rowHeight);
+                startY + rowHeight, rowHeight);
     }
 
     private static void appendVerticalSet(StringBuilder sb, int layerIndex, JointSet js,
@@ -354,7 +353,7 @@ public class Util {
         sb.append("jset 90 ").append(f2z(js.angleStdDev)).append(' ')
                 .append(f4a(rowHeight)).append(' ').append(f2z(js.traceStdDev)).append(' ')
                 .append(f4a(rowHeight)).append(' ').append(f2z(js.bridgeStdDev)).append(' ')
-                .append(f2a(widthSpacingFor(layerIndex, js))).append(' ')
+                .append(f4a(widthSpacingFor(layerIndex, js))).append(' ')
                 .append(f4z(js.spacingStdDev)).append(' ')
                 .append(f4z(startX)).append(' ').append(f4a(startY))
                 .append(" range jregion ").append(layerIndex + 1).append('\n');
@@ -364,13 +363,31 @@ public class Util {
         return layerWidthSpacing(layerIndex, js.spacing);
     }
 
-    private static double exactRowHeight(double layerHeight, double heightSpacing) {
-        int rows = (int) Math.max(1, Math.round(layerHeight / heightSpacing + 1e-9));
-        return layerHeight / rows;
-    }
-
     public static double layerWidthSpacing(int layerIndex, double inputSpacing) {
         double target = scaledTarget(inputSpacing);
+        ExcavationLayer region = primaryRegion(layerIndex);
+        if (region != null) {
+            double height = layerHeightSpacing(layerIndex, inputSpacing);
+            double width = Math.abs(region.x2 - region.x1);
+            int base = (int) Math.max(1,
+                    Math.round(ParameterList.modelLength / height + 1e-9));
+            double best = ParameterList.modelLength / base;
+            double bestScore = Double.MAX_VALUE;
+            for (int k = -3; k <= 3; k++) {
+                int columns = base + k;
+                if (columns < 1) continue;
+                double candidate = ParameterList.modelLength / columns;
+                double remainder = width % candidate;
+                double sliver = Math.max(0, candidate * 0.5 - remainder) / candidate;
+                double aspect = Math.abs(candidate / height - 1.0);
+                double score = aspect + sliver * 0.5;
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = candidate;
+                }
+            }
+            return best;
+        }
         double range = Math.max(0.05, target * 0.50);
         int steps = (int) Math.round(range / 0.01);
         double best = -1;
@@ -388,7 +405,7 @@ public class Util {
         }
         if (best <= 0) {
             for (ExcavationLayer e : ParameterList.excavationLayers) {
-                if (!excavationAffectsLayer(e, layerIndex)) continue;
+                if (overlapHeight(e, layerIndex) <= 1e-6) continue;
                 double width = Math.abs(e.x2 - e.x1);
                 if (width <= 1e-9) continue;
                 int parts = (int) Math.max(1, Math.round(width / target + 1e-9));
@@ -406,6 +423,13 @@ public class Util {
         double top = ParameterList.heightList[layerIndex];
         double bottom = ParameterList.heightList[layerIndex + 1];
         double target = scaledTarget(inputSpacing);
+        ExcavationLayer region = primaryRegion(layerIndex);
+        if (region != null) {
+            double height = overlapHeight(region, layerIndex);
+            int rows = (int) Math.max(1, Math.round(height / target + 1e-9));
+            if (ParameterList.debugMode) rows = Math.max(2, rows);
+            return height / rows;
+        }
         int parts = (int) Math.max(1, Math.round((top - bottom) / target + 1e-9));
         if (ParameterList.debugMode) parts = Math.max(2, parts);
         return (top - bottom) / parts;
@@ -418,11 +442,43 @@ public class Util {
     }
 
     public static double excavationPhase(int layerIndex, double spacing) {
-        for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (!excavationAffectsLayer(e, layerIndex)) continue;
-            return Math.min(e.x1, e.x2) % spacing;
+        ExcavationLayer region = primaryRegion(layerIndex);
+        if (region == null || spacing <= 1e-9) return 0.0;
+        return Math.min(region.x1, region.x2) % spacing;
+    }
+
+    public static double excavationStartY(int layerIndex) {
+        ExcavationLayer region = primaryRegion(layerIndex);
+        if (region != null) {
+            return Math.max(ParameterList.heightList[layerIndex + 1],
+                    Math.min(region.y1, region.y2));
+        }
+        if (ParameterList.heightList != null && layerIndex >= 0
+                && layerIndex + 1 < ParameterList.heightList.length) {
+            return ParameterList.heightList[layerIndex + 1];
         }
         return 0.0;
+    }
+
+    static ExcavationLayer primaryRegion(int layerIndex) {
+        if (ParameterList.heightList == null || layerIndex < 0
+                || layerIndex + 1 >= ParameterList.heightList.length) return null;
+        for (ExcavationLayer e : ParameterList.excavationLayers) {
+            if (Math.abs(e.x2 - e.x1) < 1e-9 || Math.abs(e.y2 - e.y1) < 1e-9) continue;
+            if (overlapHeight(e, layerIndex) <= 1e-6) continue;
+            return e;
+        }
+        return null;
+    }
+
+    static double overlapHeight(ExcavationLayer e, int layerIndex) {
+        if (ParameterList.heightList == null || layerIndex < 0
+                || layerIndex + 1 >= ParameterList.heightList.length) return 0.0;
+        double top = ParameterList.heightList[layerIndex];
+        double bottom = ParameterList.heightList[layerIndex + 1];
+        double y1 = Math.min(e.y1, e.y2);
+        double y2 = Math.max(e.y1, e.y2);
+        return Math.min(top, y2) - Math.max(bottom, y1);
     }
 
     // 开挖区域覆盖到的层都要参与节理适配，而不是只适配被标记的煤层。
@@ -443,7 +499,7 @@ public class Util {
 
     private static boolean alignsWithExcavation(int layerIndex, double spacing) {
         for (ExcavationLayer e : ParameterList.excavationLayers) {
-            if (!excavationAffectsLayer(e, layerIndex)) continue;
+            if (overlapHeight(e, layerIndex) <= 1e-6) continue;
             double width = Math.abs(e.x2 - e.x1);
             if (!multiple(width, spacing)) return false;
             if (!multiple(e.cutWidth, spacing) || !multiple(e.stepDist, spacing)) return false;

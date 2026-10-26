@@ -8,14 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Step4 {
-    public static void step4(String path) {
+    public static void step4(String path) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING)) {
+            String base = ParameterList.normalizedOutputPath();
 
-            writer.write("restore " + ParameterList.outputPath + "/dat/step_3.save\n\n");
+            writer.write("restore " + base + "/dat/step_3.sav\n\n");
 
             List<PlotItem> histPlots = allHistItems();
             writeHist(writer, histPlots);
@@ -38,8 +39,8 @@ public class Step4 {
                         writePlines(writer);
                         break;
                     case SAVE:
-                        writer.write("save " + ParameterList.outputPath
-                                + "/dat/" + saveName(action.name) + ".save\n\n");
+                        writer.write("save " + base
+                                + "/dat/" + saveName(action.name) + ".sav\n\n");
                         break;
                     case PLOT:
                         writePlots(writer, action, histPlots);
@@ -50,8 +51,6 @@ public class Step4 {
                 }
             }
 
-        } catch (IOException e) {
-            System.out.println("step4():" + e.getMessage());
         }
     }
 
@@ -167,7 +166,7 @@ public class Step4 {
                 || action.data == null || action.data.trim().isEmpty()) return;
         String file = action.name.trim();
         if (!file.toLowerCase().endsWith(".log")) file += ".log";
-        writer.write("set log " + ParameterList.outputPath + "/dat/" + file + "\n");
+        writer.write("set log " + ParameterList.normalizedOutputPath() + "/dat/" + file + "\n");
         if (action.pline != null) {
             writer.write("print pline " + action.pline + " " + action.data.trim() + "\n");
         } else {
@@ -179,6 +178,9 @@ public class Step4 {
     private static String saveName(String name) {
         if (name == null || name.trim().isEmpty()) return "step_4";
         String value = name.trim();
+        if (value.toLowerCase().endsWith(".sav")) {
+            return value.substring(0, value.length() - 4);
+        }
         if (value.toLowerCase().endsWith(".save")) {
             return value.substring(0, value.length() - 5);
         }

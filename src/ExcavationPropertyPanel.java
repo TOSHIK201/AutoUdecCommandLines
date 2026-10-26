@@ -6,10 +6,10 @@ public class ExcavationPropertyPanel extends JPanel {
     private final DefaultListModel<ExcavationLayer> model = new DefaultListModel<>();
     private final JList<ExcavationLayer> list = new JList<>(model);
     private final ExcavationFormPanel form;
-    private final JButton coalButton = new JButton("设为开挖煤层");
     private final JToggleButton mode = new JToggleButton("拖拽框选");
     private final JLabel status = new JLabel();
     private boolean binding;
+    private boolean syncingSelection;
 
     public ExcavationPropertyPanel(LayerCanvas canvas) {
         super(new BorderLayout());
@@ -36,11 +36,8 @@ public class ExcavationPropertyPanel extends JPanel {
         });
         JButton delete = new JButton("删除选中");
         delete.addActionListener(e -> deleteSelected());
-        coalButton.setToolTipText("以当前岩层中部生成开挖区域");
-        coalButton.addActionListener(e -> quickCoal());
         buttons.add(mode);
         buttons.add(delete);
-        buttons.add(coalButton);
         top.add(buttons, BorderLayout.NORTH);
         status.setBorder(BorderFactory.createEmptyBorder(2, 6, 4, 6));
         top.add(status, BorderLayout.SOUTH);
@@ -72,6 +69,7 @@ public class ExcavationPropertyPanel extends JPanel {
             mode.setSelected(on);
             mode.setText(on ? "结束框选" : "拖拽框选");
         });
+        form.setCoalAction(this::excavateCoalSeam);
         reload();
     }
 
@@ -81,8 +79,13 @@ public class ExcavationPropertyPanel extends JPanel {
         model.clear();
         for (ExcavationLayer e : ParameterList.excavationLayers) model.addElement(e);
         binding = false;
-        if (model.size() > 0) list.setSelectedIndex(Math.max(0, Math.min(keep, model.size() - 1)));
-        else form.clearForm();
+        syncingSelection = true;
+        try {
+            if (model.size() > 0) list.setSelectedIndex(Math.max(0, Math.min(keep, model.size() - 1)));
+            else form.clearForm();
+        } finally {
+            syncingSelection = false;
+        }
     }
 
     private void added(ExcavationLayer e) {
@@ -117,7 +120,12 @@ public class ExcavationPropertyPanel extends JPanel {
         if (binding) return;
         ExcavationLayer e = list.getSelectedValue();
         canvas.setSelectedExcavation(list.getSelectedIndex());
+        if (!syncingSelection && e != null && e.layerIndex >= 0) {
+            canvas.selectLayer(e.layerIndex);
+        }
         form.bindSelected();
+        ParameterList.refreshBoltBindings();
+        canvas.repaint();
         if (e == null) {
             status.setText("未选择开挖区域");
         } else {
@@ -125,26 +133,35 @@ public class ExcavationPropertyPanel extends JPanel {
         }
     }
 
-    private void quickCoal() {
+    private void excavateCoalSeam() {
         int index = canvas.getSelectedIndex();
-        if (index < 0 || index >= ParameterList.layerCount()) return;
-        ExcavationLayer existing = find(index);
-        if (existing != null) {
-            reload();
-            list.setSelectedIndex(ParameterList.excavationLayers.indexOf(existing));
-            status.setText("该层已存在开挖区域，已选择");
+        if (index < 0 || index >= ParameterList.layerCount()) {
+            ExcavationLayer selected = list.getSelectedValue();
+            if (selected != null) index = selected.layerIndex;
+        }
+        if (index < 0 || index >= ParameterList.layerCount()) {
+            status.setText("请先在画布或列表中选择煤层");
             return;
         }
         LayerData layer = ParameterList.layers.get(index);
+        ExcavationLayer e = find(index);
         UndoManager.push();
         if (layer.savedColor == null) layer.savedColor = layer.color;
         layer.color = Color.BLACK;
-        ExcavationLayer e = new ExcavationLayer(index, excavationName(layer, index));
-        ParameterList.excavationLayers.add(e);
+        if (e == null) {
+            e = new ExcavationLayer(index, excavationName(layer, index));
+            ParameterList.excavationLayers.add(e);
+        }
+        form.applyParamsTo(e);
+        double bottom = ParameterList.heights().get(index + 1);
+        e.applyCoalSeam(ParameterList.modelLength, bottom, layer.thickness);
         ParameterList.syncFromLayers();
         reload();
-        list.setSelectedIndex(model.size() - 1);
+        list.setSelectedIndex(ParameterList.excavationLayers.indexOf(e));
         canvas.repaint();
+        String label = e.name.matches("\\d+") ? e.name + "#" : e.name;
+        status.setText("已按当前参数居中开采 " + label + " 全厚煤层（"
+                + e.steps + " 步）");
     }
 
     private ExcavationLayer find(int layerIndex) {

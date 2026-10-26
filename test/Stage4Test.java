@@ -73,8 +73,8 @@ public class Stage4Test {
                 && text.contains("prop mat 12 cb_kbond"));
         check("pline", text.contains("set pline 0.00 38.75 238.00 38.75 200"));
         check("state solve", text.contains("delete range group state_1_9\nsolve"));
-        check("save module", text.contains("save F:/Itasca/UDECProjects/102/dat/step_4_1.save"));
-        check("layered plot", text.contains("plot syy fill block white cable blue"));
+        check("save module", text.contains("save F:/Itasca/UDECProjects/102/dat/step_4_1.sav"));
+        check("layered plot", text.contains("plot syy fill projected block white cable blue"));
         check("plot tagged", text.contains("after_state_1_9_step_4_16.jpg"));
         check("plot title tagged", text.contains("after_state_1_9 _syy_block_cable"));
         check("hist plot", text.contains("plot hist 1"));

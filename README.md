@@ -34,16 +34,28 @@ The result is `package\AutoUDEC\AutoUDEC.exe`. The whole `AutoUDEC` directory, i
 
 | Stage | Content | Output |
 |---|---|---|
-| 1 | Layer geometry, joint geometry, excavation geometry | `code\step_1.dat`, `dat\step_1.save` |
-| 2 | Rock material and mesh, joint material | `code\step_2.dat`, `dat\step_2.save` |
-| 3 | Boundary conditions, gravity, solve, plots | `code\step_3.dat`, `dat\step_3.save` |
-| 4 | Bolts, material, plines, excavation sequence, save, plots, logs | `code\step_4.dat`, `dat\*.save` |
+| 1 | Layer geometry, joint geometry, excavation geometry | `code\step_1.dat`, `dat\step_1.sav` |
+| 2 | Rock material and mesh, joint material | `code\step_2.dat`, `dat\step_2.sav` |
+| 3 | Boundary conditions, gravity, solve, plots | `code\step_3.dat`, `dat\step_3.sav` |
+| 4 | Bolts, material, plines, excavation sequence, save, plots, logs | `code\step_4.dat`, `dat\*.sav` |
 
 Stage 3 ends with `call step_4.dat`. Command files are written in GBK for UDEC 4.0.
 
+All paths embedded in generated command files are normalized to forward slashes (`/`); backslashes, duplicate separators and trailing separators in the output root are removed before writing.
+
+Stress-contour presets add the `projected` switch. UDEC projects zone stresses to gridpoints before building the contour, which allows the contour to reach the model edge; it is the default stress-contour construction method.
+
+Generated command files are first written to a temporary directory under the output folder. `code\step_1~4.dat` is created or replaced only after every selected stage succeeds; a failure keeps the previous successful files.
+
+Boundary conditions use axis-aligned UDEC ranges. A diagonal input line is drawn in the preview, but the applied range is a vertical or horizontal strip along its dominant direction; the UI labels such conditions as `条带近似`.
+
 ## Project file
 
-`.audec` format version `AUDEC10` stores layers, joints, excavations, boundaries, plot presets and stage-4 data. Versions 1–9 are readable; boundary gradients default to zero for older files.
+`.audec` format version `AUDEC11` stores layers, joints, excavations, boundaries, plot presets and stage-4 data. Versions 1–10 are readable; boundary gradients default to zero and bolt groups default to absolute positions for older files.
+
+Bolt groups can be bound to an excavation layer's open-off cut (`开切眼`); the stored coordinates are then offsets from the cut's start bottom corner and follow later excavation edits. The excavation form's `开挖煤层` shortcut centres the region with the entered cut width, step distance and step count, and takes the full seam thickness in one application.
+
+Layers crossed by an excavation use a square-adaptive joint grid: row height follows the excavation's overlap height, column width is the nearest model-length divisor, and the grid phase follows the excavation's lower-left corner. Dragging any region corner updates the grid on the next repaint.
 
 ## Tests
 
@@ -65,5 +77,5 @@ foreach ($test in $tests) { & "$jdk\bin\java.exe" -cp $dest $test }
 ## Notes
 
 - The stress boundary supports uniform stress and optional `xgrad` / `ygrad` components.
-- Old `step_1~4.txt` and `dat\*.dat` files are not deleted automatically; new versions use `.dat` and `.save`.
+- Old `step_1~4.txt`, `dat\*.dat` and `dat\*.save` files are not deleted automatically; new versions use `.dat` for commands and `.sav` for saves. The save-name field accepts `.sav`, `.save` or `.dat` input and always writes `.sav`.
 - UDEC must be installed separately; the application does not include UDEC or a licence.

@@ -3,54 +3,106 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Main {
+    static java.util.function.Consumer<String> errorReporter = message ->
+            JOptionPane.showMessageDialog(null, message);
+
     public static void generateStep1() {
-        if (!ensureDirs()) return;
-        ParameterList.syncFromLayers();
-        if (ParameterList.autoRunAfterGenerate) {
-            ParameterList.s1Calls2 = true;
-            ParameterList.s2Calls3 = true;
-        }
-        Step1.step1(ParameterList.outputPath + "/code/step_1.dat", ParameterList.s1Calls2);
+        generate(false, true, false, false, false);
     }
 
     public static void generateStep2() {
-        if (!ensureDirs()) return;
-        ParameterList.syncFromLayers();
-        Step2.step2(ParameterList.outputPath + "/code/step_2.dat", ParameterList.s2Calls3);
+        generate(false, false, true, false, false);
     }
 
     public static void generateStep3() {
-        if (!ensureDirs()) return;
-        ParameterList.syncFromLayers();
-        Step3.step3(ParameterList.outputPath + "/code/step_3.dat", true);
-        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
+        generate(false, false, false, true, true);
     }
 
     public static void generateStep4() {
-        if (!ensureDirs()) return;
-        ParameterList.syncFromLayers();
-        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
+        generate(false, false, false, false, true);
     }
 
-    public static void generateAllFiles() {
-        if (!ensureDirs()) return;
-        ParameterList.syncFromLayers();
-        if (ParameterList.autoRunAfterGenerate) {
-            ParameterList.s1Calls2 = true;
-            ParameterList.s2Calls3 = true;
-        }
-        Step1.step1(ParameterList.outputPath + "/code/step_1.dat", ParameterList.s1Calls2);
-        Step2.step2(ParameterList.outputPath + "/code/step_2.dat", ParameterList.s2Calls3);
-        Step3.step3(ParameterList.outputPath + "/code/step_3.dat", true);
-        Step4.step4(ParameterList.outputPath + "/code/step_4.dat");
-        System.out.println("生成完毕（阶段1-4）：" + ParameterList.outputPath);
+    public static boolean generateAllFiles() {
+        return generate(true, true, true, true, true);
     }
 
     public static void generateAllFilesAndRun() {
-        generateAllFiles();
-        autoRunUdec();
+        if (generateAllFiles()) autoRunUdec();
+    }
+
+    private static boolean generate(boolean all, boolean s1, boolean s2,
+                                    boolean s3, boolean s4) {
+        if (!ensureDirs()) return false;
+        ParameterList.syncFromLayers();
+        if ((all || s1) && ParameterList.autoRunAfterGenerate) {
+            ParameterList.s1Calls2 = true;
+            ParameterList.s2Calls3 = true;
+        }
+        Path base = Paths.get(ParameterList.outputPath.trim());
+        Path tempDir = null;
+        try {
+            tempDir = Files.createTempDirectory(base, ".audec_tmp_");
+            List<Path[]> moves = new ArrayList<>();
+            if (s1) {
+                Path temp = tempDir.resolve("step_1.dat");
+                Step1.step1(temp.toString(), ParameterList.s1Calls2);
+                moves.add(new Path[]{temp, base.resolve("code/step_1.dat")});
+            }
+            if (s2) {
+                Path temp = tempDir.resolve("step_2.dat");
+                Step2.step2(temp.toString(), ParameterList.s2Calls3);
+                moves.add(new Path[]{temp, base.resolve("code/step_2.dat")});
+            }
+            if (s3) {
+                Path temp = tempDir.resolve("step_3.dat");
+                Step3.step3(temp.toString(), true);
+                moves.add(new Path[]{temp, base.resolve("code/step_3.dat")});
+                s4 = true;
+            }
+            if (s4) {
+                Path temp = tempDir.resolve("step_4.dat");
+                Step4.step4(temp.toString());
+                moves.add(new Path[]{temp, base.resolve("code/step_4.dat")});
+            }
+            Path codeDir = base.resolve("code");
+            Files.createDirectories(codeDir);
+            for (Path[] move : moves) moveInto(move[0], move[1]);
+            if (all) System.out.println("生成完毕（阶段1-4）：" + ParameterList.outputPath);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            errorReporter.accept("生成失败，code 目录未更新：\n" + e.getMessage());
+            return false;
+        } finally {
+            deleteTree(tempDir);
+        }
+    }
+
+    private static void moveInto(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
+        } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private static void deleteTree(Path dir) {
+        if (dir == null) return;
+        try (java.util.stream.Stream<Path> paths = Files.walk(dir)) {
+            paths.sorted(java.util.Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (Exception ignored) {
+                }
+            });
+        } catch (Exception ignored) {
+        }
     }
 
     public static void autoRunUdec() {
@@ -135,7 +187,7 @@ public class Main {
             return false;
         }
         try {
-            Files.createDirectories(Paths.get(base, "code"));
+            Files.createDirectories(Paths.get(base));
             Files.createDirectories(Paths.get(base, "dat"));
             Files.createDirectories(Paths.get(base, "output"));
             return true;

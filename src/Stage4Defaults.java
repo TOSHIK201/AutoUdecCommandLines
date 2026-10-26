@@ -13,9 +13,13 @@ class Stage4Defaults {
 
     private static void addBolts() {
         BoltGroup b1 = add("BOLT1", 100, 26.4, 108, 26.4, 8, 1.0, 2.4);
-        add("BOLT2", 100, 26.4, 108, 26.4, 2, 4.0, 8.3);
+        BoltGroup b2 = add("BOLT2", 100, 26.4, 108, 26.4, 2, 4.0, 8.3);
         BoltGroup b3 = add("BOLT3", 100, 26.4, 100, 21.6, 5, 1.0, 2.4);
         BoltGroup b4 = add("BOLT4", 108, 26.4, 108, 21.6, 5, 1.0, 2.4);
+        bind(b1, "9");
+        bind(b2, "9");
+        bind(b3, "9");
+        bind(b4, "9");
         angle(b1, 0, 105);
         angle(b1, 7, 75);
         angle(b3, 0, -195);
@@ -41,6 +45,11 @@ class Stage4Defaults {
             g.bolts.get(index).angleDeg = angle;
             g.bolts.get(index).custom = true;
         }
+    }
+
+    private static void bind(BoltGroup g, String layerName) {
+        g.bindName = layerName;
+        g.captureOffsets();
     }
 
     private static void selectPlots() {

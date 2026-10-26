@@ -7,15 +7,15 @@ class PlotPresets {
             {"最大不平衡力", "plot hist", "hist unbal"},
             {"最大速度", "plot hist", "hist vmax"},
             {"Y方向位移云图", "plot block ydis fill", null},
-            {"Y方向应力云图", "plot block syy fill", null},
+            {"Y方向应力云图", "plot block syy fill projected", null},
             {"块体模型", "plot block", null},
             {"单元体模型图", "plot zone", null},
             {"材料分布图", "plot block mat", null},
             {"X方向位移云图", "plot block xdis fill", null},
-            {"X方向应力云图", "plot block sxx fill", null},
-            {"剪应力云图", "plot block sxy fill", null},
-            {"最大主应力云图", "plot block sig1", null},
-            {"最小主应力云图", "plot block sig2", null},
+            {"X方向应力云图", "plot block sxx fill projected", null},
+            {"剪应力云图", "plot block sxy fill projected", null},
+            {"最大主应力云图", "plot block sig1 projected", null},
+            {"最小主应力云图", "plot block sig2 projected", null},
             {"塑性区图", "plot block plastic", null},
             {"运算速率", "plot hist", "hist solve_ratio"}
     };
@@ -36,7 +36,7 @@ class PlotPresets {
         List<PlotPreset> list = build(4);
         list.add(new PlotPreset("块体+锚杆", "plot block white cable blue",
                 false, "_block_cable", "step_4_15.jpg"));
-        list.add(new PlotPreset("Y应力+块体+锚杆", "plot syy fill block white cable blue",
+        list.add(new PlotPreset("Y应力+块体+锚杆", "plot syy fill projected block white cable blue",
                 false, "_syy_block_cable", "step_4_16.jpg"));
         list.add(new PlotPreset("Y位移+块体+锚杆", "plot ydis fill block white cable blue",
                 false, "_ydis_block_cable", "step_4_17.jpg"));

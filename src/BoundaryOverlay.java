@@ -43,7 +43,8 @@ class BoundaryOverlay {
                     toX.applyAsInt(b.ex), toY.applyAsInt(b.ey));
             g2.setStroke(new BasicStroke(1f));
 
-            String label = (i + 1) + " " + b.type.label;
+            String label = (i + 1) + " " + b.type.label
+                    + (b.diagonal() ? "（条带近似）" : "");
             FontMetrics fm = g2.getFontMetrics();
             int tw = fm.stringWidth(label);
             int th = fm.getHeight();

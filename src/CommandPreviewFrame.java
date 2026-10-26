@@ -48,7 +48,14 @@ public class CommandPreviewFrame extends JFrame {
             return;
         }
         try {
-            Main.generateAllFiles();
+            if (!Main.generateAllFiles()) {
+                String message = "生成失败，code 目录保持上一次成功结果。";
+                area1.setText(message);
+                area2.setText(message);
+                area3.setText(message);
+                area4.setText(message);
+                return;
+            }
             area1.setText(read("step_1.dat"));
             area2.setText(read("step_2.dat"));
             area3.setText(read("step_3.dat"));
@@ -60,7 +67,8 @@ public class CommandPreviewFrame extends JFrame {
 
     private String read(String name) {
         try {
-            byte[] bytes = Files.readAllBytes(Paths.get(ParameterList.outputPath + "/code/" + name));
+            byte[] bytes = Files.readAllBytes(Paths.get(
+                    ParameterList.normalizedOutputPath() + "/code/" + name));
             return new String(bytes, Charset.forName("GBK"));
         } catch (Exception e) {
             return "无法读取 " + name + "\n" + e;

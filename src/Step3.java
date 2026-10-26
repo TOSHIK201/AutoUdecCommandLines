@@ -8,15 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Step3 {
-    public static void step3(String path, boolean callNext) {
+    public static void step3(String path, boolean callNext) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.CREATE,
                 StandardOpenOption.TRUNCATE_EXISTING,
                 StandardOpenOption.WRITE
         )) {
+            String base = ParameterList.normalizedOutputPath();
 
-            writer.write("restore " + ParameterList.outputPath + "/dat/step_2.save\n\n");
+            writer.write("restore " + base + "/dat/step_2.sav\n\n");
 
             String g = (ParameterList.gravity == Math.rint(ParameterList.gravity)) ? String.valueOf((int) ParameterList.gravity) : String.valueOf(ParameterList.gravity);
             writer.write("set gravity 0 " + g + "\n\n");
@@ -52,7 +53,7 @@ public class Step3 {
             }
             writer.write("solve\n\n");
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_3.save\n\n");
+            writer.write("save " + base + "/dat/step_3.sav\n\n");
 
             for (PlotPreset preset : selectedPlots) {
                 String plot = preset.histCommand != null
@@ -65,11 +66,9 @@ public class Step3 {
 
             if (callNext) {
                 writer.write("\n");
-                writer.write("call " + ParameterList.outputPath + "/code/step_4.dat\n");
+                writer.write("call " + base + "/code/step_4.dat\n");
             }
 
-        } catch (IOException e) {
-            System.out.println("step3():" + e.getMessage());
         }
     }
 }

@@ -9,6 +9,18 @@ class ParameterList {
 
     // 输出路径
     public static String outputPath = "";
+
+    public static String normalizedOutputPath() {
+        String base = outputPath == null ? "" : outputPath.trim().replace('\\', '/');
+        boolean unc = base.startsWith("//");
+        base = base.replaceAll("/{2,}", "/");
+        if (unc) base = "/" + base;
+        while (base.length() > 3 && base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
     public static String projectPath = "";
     public static boolean restoring = false;
 
@@ -377,6 +389,13 @@ class ParameterList {
             e.x2 = left + total;
             e.y1 = bottom;
             e.y2 = bottom + height;
+        }
+        refreshBoltBindings();
+    }
+
+    static void refreshBoltBindings() {
+        for (BoltGroup g : boltGroups) {
+            if (g.isBound()) g.applyBinding();
         }
     }
 

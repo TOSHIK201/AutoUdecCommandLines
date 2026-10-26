@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Step1 {
-    public static void step1(String path, boolean callNext) {
+    public static void step1(String path, boolean callNext) throws IOException {
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path),
                 Charset.forName("GBK"),
                 StandardOpenOption.CREATE,
@@ -16,6 +16,7 @@ public class Step1 {
                 StandardOpenOption.WRITE
                 )
         ) {
+            String base = ParameterList.normalizedOutputPath();
             writer.write("new\n");
             writer.write("\n");
             writer.write("round " + ParameterList.round + "\n");
@@ -53,7 +54,7 @@ public class Step1 {
             writer.write("\n");
             writer.write(Util.generateJsetsFromLayers(ParameterList.heightList, ParameterList.layerJoints, ParameterList.modelLength));
 
-            writer.write("save " + ParameterList.outputPath + "/dat/step_1.save\n");
+            writer.write("save " + base + "/dat/step_1.sav\n");
             for (PlotPreset preset : ParameterList.plotPresets1) {
                 if (preset.selected && preset.histCommand == null) {
                     writer.write(Util.generatePlotCommands(preset.title, preset.plotCommand, preset.fileName));
@@ -62,11 +63,9 @@ public class Step1 {
 
             if (callNext) {
                 writer.write("\n");
-                writer.write("call " + ParameterList.outputPath + "/code/step_2.dat\n");
+                writer.write("call " + base + "/code/step_2.dat\n");
             }
 
-        } catch (IOException e){
-            System.out.println("step1():" + e.getMessage());
         }
     }
 

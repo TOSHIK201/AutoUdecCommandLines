@@ -47,7 +47,7 @@ public class DefaultConfigTest {
         String text = new String(Files.readAllBytes(step1), Charset.forName("GBK"));
         check("excavation group", text.contains(
                 "group openOffCut_9 range 100.00 108.00 21.60 26.40"));
-        check("save file", text.contains("/dat/step_1.save"));
+        check("save file", text.contains("/dat/step_1.sav"));
         check("call file", text.contains("/code/step_2.dat"));
         check("round first", text.indexOf("round 0.03") < text.indexOf("set ovtol 0.05"));
 
