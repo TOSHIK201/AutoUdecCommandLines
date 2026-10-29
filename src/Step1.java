@@ -20,6 +20,7 @@ public class Step1 {
             writer.write("new\n");
             writer.write("\n");
             writer.write("round " + ParameterList.round + "\n");
+            writer.write("set edge " + Util.numText(ParameterList.effectiveEdge()) + "\n");
             writer.write("set ovtol " + ParameterList.ovtol + "\n");
             writer.write("title\n");
             writer.write(ParameterList.step1Title + "\n");

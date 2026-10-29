@@ -37,6 +37,11 @@ public class Main {
 
     private static boolean generate(boolean all, boolean s1, boolean s2,
                                     boolean s3, boolean s4) {
+        String toleranceProblem = ParameterList.edgeProblem();
+        if (toleranceProblem != null) {
+            errorReporter.accept(toleranceProblem);
+            return false;
+        }
         if (!ensureDirs()) return false;
         ParameterList.syncFromLayers();
         if ((all || s1) && ParameterList.autoRunAfterGenerate) {

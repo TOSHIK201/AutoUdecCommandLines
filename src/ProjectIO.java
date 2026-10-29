@@ -7,7 +7,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class ProjectIO {
-    private static final String MAGIC = "AUDEC11";
+    private static final String MAGIC = "AUDEC12";
+    private static final String MAGIC_V11 = "AUDEC11";
     private static final String MAGIC_V10 = "AUDEC10";
     private static final String MAGIC_V9 = "AUDEC9";
     private static final String MAGIC_V8 = "AUDEC8";
@@ -46,7 +47,8 @@ public class ProjectIO {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(data))) {
             String magic = in.readUTF();
             int version;
-            if (MAGIC.equals(magic)) version = 11;
+            if (MAGIC.equals(magic)) version = 12;
+            else if (MAGIC_V11.equals(magic)) version = 11;
             else if (MAGIC_V10.equals(magic)) version = 10;
             else if (MAGIC_V9.equals(magic)) version = 9;
             else if (MAGIC_V8.equals(magic)) version = 8;
@@ -58,7 +60,7 @@ public class ProjectIO {
             else if (MAGIC_V2.equals(magic)) version = 2;
             else if (MAGIC_V1.equals(magic)) version = 1;
             else throw new IOException("不是 .audec 工程文件");
-            readGlobals(in, version >= 2);
+            readGlobals(in, version);
             ProjectDataIO.read(in, version);
             if (version < 6) {
                 ParameterList.ensurePlotPresets();
@@ -107,6 +109,7 @@ public class ProjectIO {
         out.writeInt(ParameterList.coal10Layer);
         out.writeDouble(ParameterList.round);
         out.writeDouble(ParameterList.ovtol);
+        out.writeDouble(ParameterList.edge);
         out.writeDouble(ParameterList.boundTol);
         out.writeDouble(ParameterList.gravity);
         out.writeDouble(ParameterList.stressTop);
@@ -134,7 +137,8 @@ public class ProjectIO {
         out.writeDouble(ParameterList.boundaryWidth);
     }
 
-    private static void readGlobals(DataInputStream in, boolean v2) throws IOException {
+    private static void readGlobals(DataInputStream in, int version) throws IOException {
+        boolean v2 = version >= 2;
         ParameterList.outputPath = in.readUTF();
         ParameterList.s1Calls2 = in.readBoolean();
         ParameterList.s2Calls3 = in.readBoolean();
@@ -166,6 +170,8 @@ public class ProjectIO {
         ParameterList.coal10Layer = in.readInt();
         ParameterList.round = in.readDouble();
         ParameterList.ovtol = in.readDouble();
+        // AUDEC12 起保存最小块体边；旧工程按 0（自动取 2×圆角）处理
+        ParameterList.edge = version >= 12 ? in.readDouble() : 0;
         ParameterList.boundTol = in.readDouble();
         ParameterList.gravity = in.readDouble();
         ParameterList.stressTop = in.readDouble();

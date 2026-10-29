@@ -20,7 +20,7 @@ class ConfigTemplate {
             "direction", "excavationHeight", "excavationCentered", "excavationOriginX",
             "excavationOriginY", "excavationPreset"};
     private static final String[] BOUNDARY = {"gravity", "stressEnabled", "boundaryWidth",
-            "round", "ovtol"};
+            "round", "edge", "ovtol"};
     private static final String[] JOINT = {"jointAngle", "jointAngleStdDev", "jointBridgeLength",
             "jointBridgeStdDev", "jointTraceLength", "jointTraceStdDev", "jointSpacing",
             "jointSpacingStdDev", "jointStartX", "jointStartY"};

@@ -21,6 +21,8 @@ public class UiStructureTest {
                 check("stage2 title", ((JToggleButton) buttons.get(1)).getText()
                         .equals("阶段2 网格与材料"));
                 check("stage1 first", ((JToggleButton) buttons.get(0)).isSelected());
+                // 阶段页面按需构建：逐个打开后再检查卡片齐全
+                for (int i = 0; i < 4; i++) stage.setSelectedTab(i);
                 JPanel content = (JPanel) read(stage, "stageContent");
                 check("stage cards", content.getComponentCount() == 4);
 

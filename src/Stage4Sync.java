@@ -2,6 +2,20 @@ import java.util.HashSet;
 import java.util.Set;
 
 class Stage4Sync {
+    // 开挖区域删除后，其开切眼与各步分组对应的开挖动作一并移除
+    static void removeExcavationActions(ExcavationLayer e) {
+        if (e == null) return;
+        Set<String> names = new HashSet<>();
+        names.add(Stage4Geometry.openGroup(e));
+        java.util.List<Double> xs = Util.calculateExcavationXList(e);
+        for (int i = 1; i < xs.size() - 1; i++) {
+            names.add("state_" + i + "_" + e.name);
+        }
+        ParameterList.stage4Actions.removeIf(a ->
+                a.type == Stage4Action.Type.EXCAVATE
+                        && a.group != null && names.contains(a.group.trim()));
+    }
+
     static void syncBoltActions() {
         Set<String> names = new HashSet<>();
         for (BoltGroup g : ParameterList.boltGroups) names.add(g.name);

@@ -33,6 +33,15 @@ public class BoltPanel extends JPanel {
         super(new BorderLayout());
         this.canvas = canvas;
 
+        // 内容按自身高度排布，窗口偏矮时由外层滚动，避免上下区块相互穿插
+        JPanel content = new FillPanel(new BorderLayout());
+        JScrollPane scroll = new JScrollPane(content,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+        scroll.getVerticalScrollBar().setUnitIncrement(16);
+        add(scroll, BorderLayout.CENTER);
+
         cableMat.setToolTipText("块体、锚杆、锚固剂共用 mat 材料表；默认顺延岩层最大材料号");
         groutMat.setToolTipText("默认取锚杆材料号 +1；节理 jmat 是独立表，不参与此顺延");
 
@@ -78,7 +87,7 @@ public class BoltPanel extends JPanel {
         row(form, c, 7, "锚杆材料", cableMat, "锚固剂", groutMat);
         singleRow(form, c, 8, "自动留空", gapLabel);
         top.add(form, BorderLayout.CENTER);
-        add(top, BorderLayout.NORTH);
+        content.add(top, BorderLayout.NORTH);
 
         groupList.setVisibleRowCount(4);
         groupList.addListSelectionListener(e -> {
@@ -87,7 +96,7 @@ public class BoltPanel extends JPanel {
         JPanel center = new JPanel(new BorderLayout());
         center.setBorder(BorderFactory.createTitledBorder("锚杆组"));
         center.add(new JScrollPane(groupList), BorderLayout.CENTER);
-        add(center, BorderLayout.CENTER);
+        content.add(center, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new BorderLayout());
         JPanel boltForm = new JPanel(new GridBagLayout());
@@ -111,7 +120,7 @@ public class BoltPanel extends JPanel {
         });
         bottom.add(new JScrollPane(boltList), BorderLayout.CENTER);
         bottom.add(boltForm, BorderLayout.SOUTH);
-        add(bottom, BorderLayout.SOUTH);
+        content.add(bottom, BorderLayout.SOUTH);
 
         canvas.setBoltFactory(this::newFromForm);
         canvas.setBoltCreated(this::added);
@@ -120,6 +129,37 @@ public class BoltPanel extends JPanel {
         });
         refreshMaterialBoxes();
         reload();
+    }
+
+    // 只跟随视口宽度，不跟随高度：高度超出时交给外层滚动条
+    private static class FillPanel extends JPanel implements Scrollable {
+        FillPanel(LayoutManager layout) {
+            super(layout);
+        }
+
+        @Override public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override public int getScrollableUnitIncrement(java.awt.Rectangle visible,
+                                                        int orientation, int direction) {
+            return 16;
+        }
+
+        @Override public int getScrollableBlockIncrement(java.awt.Rectangle visible,
+                                                         int orientation, int direction) {
+            return Math.max(16, visible.height - 16);
+        }
+
+        @Override public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        // 视口够高时铺满（列表随之变长）；不够高时保持自身高度，交给滚动条
+        @Override public boolean getScrollableTracksViewportHeight() {
+            Container parent = getParent();
+            return parent != null && parent.getHeight() >= getPreferredSize().height;
+        }
     }
 
     public void reload() {

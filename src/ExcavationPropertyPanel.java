@@ -102,6 +102,7 @@ public class ExcavationPropertyPanel extends JPanel {
         ExcavationLayer e = model.get(index);
         UndoManager.push();
         ParameterList.excavationLayers.remove(e);
+        Stage4Sync.removeExcavationActions(e);
         model.remove(index);
         restoreColorIfUnlinked(e);
         if (model.size() > 0) list.setSelectedIndex(Math.min(index, model.size() - 1));

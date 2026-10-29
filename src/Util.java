@@ -542,6 +542,16 @@ public class Util {
         return Math.round(value * 100.0) / 100.0;
     }
 
+    // 长度文本：最多四位小数，去掉多余的零，便于写进命令文件
+    public static String numText(double value) {
+        String text = String.format(java.util.Locale.ROOT, "%.4f", value);
+        while (text.contains(".") && (text.endsWith("0"))) {
+            text = text.substring(0, text.length() - 1);
+        }
+        if (text.endsWith(".")) text = text.substring(0, text.length() - 1);
+        return text;
+    }
+
     private static String fAngle(double v) {
         if (Math.abs(v - Math.rint(v)) < 1e-9) return String.valueOf((int) Math.rint(v));
         return String.format("%.2f", v);

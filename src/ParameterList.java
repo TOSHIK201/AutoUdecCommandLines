@@ -22,6 +22,29 @@ class ParameterList {
     }
 
     public static String projectPath = "";
+
+    // 最小块体边的实际取值：未指定时按手册默认取 2×圆角长度
+    public static double effectiveEdge() {
+        return edge > 0 ? edge : 2 * round;
+    }
+
+    // UDEC 要求 SET edge emin ≥ 2×round；不满足时返回提示，满足时返回 null
+    public static String edgeProblem() {
+        double min = 2 * round;
+        double emin = effectiveEdge();
+        if (emin >= min - 1e-9) return null;
+        return "最小块体边 " + Util.numText(emin) + " m 小于 2×圆角长度 "
+                + Util.numText(min) + " m。\nUDEC 将报 rounding length too great，"
+                + "请将最小块体边设置为不小于 " + Util.numText(min) + "，或减小圆角长度。";
+    }
+
+    // 重叠容差大于默认值（圆角的一半）时提示，不拦截生成
+    public static String ovtolWarning() {
+        double dflt = 0.5 * round;
+        if (ovtol <= dflt * 1.01 + 1e-9) return null;
+        return "接触重叠容差 " + Util.numText(ovtol) + " m 大于默认值 "
+                + Util.numText(dflt) + " m，会掩盖真实的接触重叠。";
+    }
     public static boolean restoring = false;
 
     // 阶段自动调用开关
@@ -95,6 +118,8 @@ class ParameterList {
     // 数值控制
     public static double round = 0.03;
     public static double ovtol = 0.05;
+    // 最小块体边（m）；0 表示自动取 2×圆角长度，UDEC 要求 emin ≥ 2×round
+    public static double edge = 0;
     public static double boundTol = 0.1;
     public static double gravity = -10.0;
     public static double stressTop = 0.0;

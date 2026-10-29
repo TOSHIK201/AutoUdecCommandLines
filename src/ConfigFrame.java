@@ -146,12 +146,30 @@ public class ConfigFrame extends JFrame {
 
         row1.add(new JLabel("圆角长度(m):"));
         JTextField round = new JTextField(String.valueOf(ParameterList.round), 5);
-        bindDouble(round, v -> ParameterList.round = v);
+        round.setToolTipText("UDEC 的圆角半径；块体尺寸越小，该值须按比例减小");
+        bindDouble(round, v -> {
+            ParameterList.round = v;
+            refreshToleranceHint();
+        });
         row1.add(round);
+
+        row1.add(new JLabel("最小块体边(m):"));
+        JTextField edge = new JTextField(ParameterList.edge > 0
+                ? Util.numText(ParameterList.edge) : "0", 5);
+        edge.setToolTipText("0 表示自动取 2×圆角长度；UDEC 要求该值不小于 2×圆角");
+        bindDouble(edge, v -> {
+            ParameterList.edge = v;
+            refreshToleranceHint();
+        });
+        row1.add(edge);
 
         row1.add(new JLabel("接触重叠容差:"));
         JTextField ovtol = new JTextField(String.valueOf(ParameterList.ovtol), 5);
-        bindDouble(ovtol, v -> ParameterList.ovtol = v);
+        ovtol.setToolTipText("默认为圆角长度的一半；增大该值只会掩盖重叠问题");
+        bindDouble(ovtol, v -> {
+            ParameterList.ovtol = v;
+            refreshToleranceHint();
+        });
         row1.add(ovtol);
 
         JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 2));
@@ -178,7 +196,7 @@ public class ConfigFrame extends JFrame {
         autoRun.addActionListener(e -> {
             UndoManager.push();
             ParameterList.autoRunAfterGenerate = autoRun.isSelected();
-            stagePanel.setAutoRun(autoRun.isSelected());
+            if (stagePanel != null) stagePanel.setAutoRun(autoRun.isSelected());
         });
         row2.add(autoRun);
 
@@ -242,6 +260,25 @@ public class ConfigFrame extends JFrame {
             }
         } catch (NumberFormatException ignored) {
         }
+    }
+
+    // 圆角、最小块体边、重叠容差三者的一致性提示：显示在窗口底部状态栏
+    private void refreshToleranceHint() {
+        if (status == null) return;
+        String problem = ParameterList.edgeProblem();
+        if (problem != null) {
+            status.setForeground(new Color(178, 34, 34));
+            status.setText("参数不一致：" + problem.replace("\n", " "));
+            return;
+        }
+        String warning = ParameterList.ovtolWarning();
+        if (warning != null) {
+            status.setForeground(new Color(160, 96, 0));
+            status.setText(warning);
+            return;
+        }
+        status.setForeground(Color.BLACK);
+        status.setText("就绪");
     }
 
     private void bindDouble(JTextField field, java.util.function.DoubleConsumer setter) {
@@ -329,7 +366,12 @@ public class ConfigFrame extends JFrame {
         UndoManager.push();
         UndoManager.suspend(() -> {
             ParameterList.layers.remove(index);
-            ParameterList.excavationLayers.removeIf(e -> e.layerIndex == index);
+            java.util.List<ExcavationLayer> removed = new java.util.ArrayList<>();
+            for (ExcavationLayer e : ParameterList.excavationLayers) {
+                if (e.layerIndex == index) removed.add(e);
+            }
+            ParameterList.excavationLayers.removeAll(removed);
+            for (ExcavationLayer e : removed) Stage4Sync.removeExcavationActions(e);
             for (ExcavationLayer e : ParameterList.excavationLayers) {
                 if (e.layerIndex > index) e.layerIndex--;
             }

@@ -51,9 +51,17 @@ Boundary conditions use axis-aligned UDEC ranges. A diagonal input line is drawn
 
 ## Project file
 
-`.audec` format version `AUDEC11` stores layers, joints, excavations, boundaries, plot presets and stage-4 data. Versions 1–10 are readable; boundary gradients default to zero and bolt groups default to absolute positions for older files.
+`.audec` format version `AUDEC12` stores layers, joints, excavations, boundaries, plot presets and stage-4 data. Versions 1–11 are readable; boundary gradients default to zero, bolt groups default to absolute positions and the minimum block edge defaults to twice the rounding length for older files.
 
 Bolt groups can be bound to an excavation layer's open-off cut (`开切眼`); the stored coordinates are then offsets from the cut's start bottom corner and follow later excavation edits. The excavation form's `开挖煤层` shortcut centres the region with the entered cut width, step distance and step count, and takes the full seam thickness in one application.
+
+The stage-4 excavation dropdown is rebuilt from the current excavation layers whenever stage 4 is opened, so changes to step count, cut width or region name appear without restarting the application.
+
+Deleting an excavation region (from the excavation list or by deleting its rock layer) also removes the stage-4 excavation actions that point at that region's groups; the deletion is one undo step like any other.
+
+Stage pages are built on first use. Startup constructs only the active stage, so the first click on 阶段2/3/4 costs a few tens of milliseconds while later visits are instant.
+
+`step_1.dat` now writes `set edge` before `BLOCK`: the value is twice the rounding length unless the "最小块体边" field overrides it. UDEC requires `emin >= 2 × round`, so generation is refused when the entered value is smaller, and the status bar warns when `ovtol` exceeds half the rounding length. Projects store the field from `AUDEC12` on; older files load with the automatic value.
 
 Layers crossed by an excavation use a square-adaptive joint grid: row height follows the excavation's overlap height, column width is the nearest model-length divisor, and the grid phase follows the excavation's lower-left corner. Dragging any region corner updates the grid on the next repaint.
 

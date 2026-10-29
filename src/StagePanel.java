@@ -13,15 +13,14 @@ public class StagePanel extends JPanel {
     private int selectedStage = 0;
     private JTabbedPane subStage1;
     private JTabbedPane subStage2;
+    private Stage4Panel stage4;
+    private final boolean[] built = new boolean[4];
+    private boolean autoRun;
 
     public StagePanel(PropertyPanel propertyPanel, LayerCanvas canvas) {
         this.canvas = canvas;
         this.propertyPanel = propertyPanel;
         setLayout(new BorderLayout());
-        stageContent.add(buildStage1(propertyPanel), "0");
-        stageContent.add(buildStage2(propertyPanel), "1");
-        stageContent.add(buildStage3(), "2");
-        stageContent.add(new Stage4Panel(canvas), "3");
         add(buildStageHeader(), BorderLayout.NORTH);
         add(stageContent, BorderLayout.CENTER);
         selectStage(0);
@@ -51,6 +50,7 @@ public class StagePanel extends JPanel {
     }
 
     public void setAutoRun(boolean auto) {
+        autoRun = auto;
         if (auto) {
             ParameterList.s1Calls2 = true;
             ParameterList.s2Calls3 = true;
@@ -62,6 +62,26 @@ public class StagePanel extends JPanel {
         if (call3 != null) {
             if (auto) call3.setSelected(true);
             call3.setEnabled(!auto);
+        }
+    }
+
+    // 阶段页面按需构建：启动时只建当前阶段，避免一次性加载全部 Swing 组件
+    private void ensureStage(int index) {
+        if (index < 0 || index >= built.length || built[index]) return;
+        built[index] = true;
+        switch (index) {
+            case 0:
+                stageContent.add(buildStage1(propertyPanel), "0");
+                break;
+            case 1:
+                stageContent.add(buildStage2(propertyPanel), "1");
+                break;
+            case 2:
+                stageContent.add(buildStage3(), "2");
+                break;
+            default:
+                stage4 = new Stage4Panel(canvas);
+                stageContent.add(stage4, "3");
         }
     }
 
@@ -89,9 +109,12 @@ public class StagePanel extends JPanel {
     private void selectStage(int index) {
         if (index < 0 || index >= stageButtons.size()) return;
         selectedStage = index;
+        ensureStage(index);
         stageCards.show(stageContent, String.valueOf(index));
         stageButtons.get(index).setSelected(true);
         canvas.setActiveStage(index);
+        // 开挖区域可在阶段1修改，进入阶段4 时重建下拉列表，避免列出旧的开挖布
+        if (index == 3 && stage4 != null) stage4.reload();
         if (index == 0 || index == 1) {
             propertyPanel.bindData(canvas.getSelectedIndex());
         }
@@ -129,6 +152,7 @@ public class StagePanel extends JPanel {
         south.add(bottomBar("自动调用阶段2", ParameterList.s1Calls2, v -> ParameterList.s1Calls2 = v,
                 "生成阶段1", Main::generateStep1), BorderLayout.SOUTH);
         panel.add(south, BorderLayout.SOUTH);
+        if (autoRun && call2 != null) call2.setEnabled(false);
         return panel;
     }
 
@@ -151,6 +175,7 @@ public class StagePanel extends JPanel {
         south.add(bottomBar("自动调用阶段3", ParameterList.s2Calls3, v -> ParameterList.s2Calls3 = v,
                 "生成阶段2", Main::generateStep2), BorderLayout.SOUTH);
         panel.add(south, BorderLayout.SOUTH);
+        if (autoRun && call3 != null) call3.setEnabled(false);
         return panel;
     }
 
