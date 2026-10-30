@@ -6,6 +6,7 @@ test_out/
 
 ### AutoUDEC build ###
 build/
+build_check/
 build_stage/
 dist/
 package/

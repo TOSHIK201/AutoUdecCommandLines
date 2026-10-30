@@ -17,6 +17,7 @@ public class Step1 {
                 )
         ) {
             String base = ParameterList.normalizedOutputPath();
+            Util.spacingTrace.clear();
             writer.write("new\n");
             writer.write("\n");
             writer.write("round " + ParameterList.round + "\n");
@@ -54,6 +55,10 @@ public class Step1 {
             writer.write(Util.generateJregions(ParameterList.heightList, ParameterList.modelLength));
             writer.write("\n");
             writer.write(Util.generateJsetsFromLayers(ParameterList.heightList, ParameterList.layerJoints, ParameterList.modelLength));
+
+            if (ParameterList.debugMode) {
+                for (String line : Util.spacingTrace) System.out.println("[spacing] " + line);
+            }
 
             writer.write("save " + base + "/dat/step_1.sav\n");
             for (PlotPreset preset : ParameterList.plotPresets1) {

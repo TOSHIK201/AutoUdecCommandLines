@@ -172,6 +172,9 @@ public class Util {
      *  切成四个三角单元（呈叉形），又小于对角线本身，避免单元跨格。 */
     public static final double MESH_EDGE_DIAGONAL_RATIO = 0.60;
 
+    /** 调试模式下记录每层列宽的选择依据，生成前清空。 */
+    public static final List<String> spacingTrace = new ArrayList<>();
+
     /**
      * 生成网格划分（gen edge）命令。边长取方格对角线的 60%。
      * 方格尺寸取自该层节理组（0° 决定行高、90° 决定列宽），与 jset 命令同源，
@@ -394,25 +397,7 @@ public class Util {
         ExcavationLayer region = primaryRegion(layerIndex);
         if (region != null) {
             double height = layerHeightSpacing(layerIndex, inputSpacing);
-            double width = Math.abs(region.x2 - region.x1);
-            int base = (int) Math.max(1,
-                    Math.round(ParameterList.modelLength / height + 1e-9));
-            double best = ParameterList.modelLength / base;
-            double bestScore = Double.MAX_VALUE;
-            for (int k = -3; k <= 3; k++) {
-                int columns = base + k;
-                if (columns < 1) continue;
-                double candidate = ParameterList.modelLength / columns;
-                double remainder = width % candidate;
-                double sliver = Math.max(0, candidate * 0.5 - remainder) / candidate;
-                double aspect = Math.abs(candidate / height - 1.0);
-                double score = aspect + sliver * 0.5;
-                if (score < bestScore) {
-                    bestScore = score;
-                    best = candidate;
-                }
-            }
-            return best;
+            return round4(regionColumnSpacing(layerIndex, region, height, target));
         }
         double range = Math.max(0.05, target * 0.50);
         int steps = (int) Math.round(range / 0.01);
@@ -443,6 +428,80 @@ public class Util {
             }
         }
         return best > 0 ? best : target;
+    }
+
+
+    /**
+     * 开挖覆盖层的列宽选择。区域左右边界要由竖向节理同相，否则边缘出现薄块；
+     * 区域内部的裂隙（切眼边界、各开挖步边界）同样切割岩体，也要求竖向节理与它们同相。
+     * 在满足同相的前提下尽量保持方格。候选值由各关键长度整除得到，按加权残差评分。
+     */
+    private static double regionColumnSpacing(int layerIndex, ExcavationLayer region,
+                                              double rowHeight, double target) {
+        double width = Math.abs(region.x2 - region.x1);
+        double cut = Math.max(0.0, region.cutWidth);
+        double step = Math.max(0.0, region.stepDist);
+        java.util.TreeSet<Double> candidates = new java.util.TreeSet<>();
+        collectSpacingCandidates(candidates, ParameterList.modelLength, target);
+        collectSpacingCandidates(candidates, width, target);
+        if (cut > 1e-9) collectSpacingCandidates(candidates, cut, target);
+        if (step > 1e-9) collectSpacingCandidates(candidates, step, target);
+        double best = Math.max(0.05, target);
+        double bestScore = Double.MAX_VALUE;
+        for (double s : candidates) {
+            double score = Math.abs(s / rowHeight - 1.0)
+                    + 2.0 * edgeShortfall(width, s)
+                    + 1.5 * edgeShortfall(cut, s)
+                    + 1.5 * edgeShortfall(step, s)
+                    + 0.5 * edgeShortfall(ParameterList.modelLength, s)
+                    + 0.2 * Math.abs(s / target - 1.0);
+            if (score < bestScore - 1e-12) {
+                bestScore = score;
+                best = s;
+            }
+        }
+        if (ParameterList.debugMode) {
+            spacingTrace.add(String.format(java.util.Locale.ROOT,
+                    "layer %d 区域宽 %.2f 行高 %.4f 列宽 %.4f 长宽比 %.3f 边界残差 %.3f 切眼残差 %.3f 步距残差 %.3f 评分 %.3f",
+                    layerIndex, width, rowHeight, best, best / rowHeight,
+                    edgeShortfall(width, best), edgeShortfall(cut, best),
+                    edgeShortfall(step, best), bestScore));
+        }
+        return best;
+    }
+
+    /** 关键长度的整除候选：长度除以与目标间距相近的份数。 */
+    private static void collectSpacingCandidates(java.util.TreeSet<Double> out,
+                                                 double length, double target) {
+        if (length <= 1e-9 || target <= 1e-9) return;
+        int base = (int) Math.max(1, Math.round(length / target));
+        for (int k = -6; k <= 6; k++) {
+            int parts = base + k;
+            if (parts < 1) continue;
+            double spacing = length / parts;
+            if (spacing >= 0.02) out.add(spacing);
+        }
+    }
+
+    /**
+     * 边缘缺口评分：长度除以间距后的余数决定末端块体的宽度，
+     * 取余数与“间距减余数”的较小值作为最窄块宽。宽度不小于半列视为可接受，
+     * 小于半列按缺口比例扣分；2 毫米以内视同整除（4 位小数舍入误差）。
+     */
+    private static double edgeShortfall(double length, double spacing) {
+        if (spacing <= 1e-9) return 1.0;
+        if (length <= 1e-9) return 0.0;
+        double parts = Math.floor(length / spacing + 1e-9);
+        double remainder = length - parts * spacing;
+        double edge = Math.min(remainder, spacing - remainder);
+        if (edge <= 2e-3) return 0.0;
+        double acceptable = Math.max(0.05, spacing * 0.5);
+        if (edge >= acceptable) return 0.0;
+        return (acceptable - edge) / acceptable;
+    }
+
+    private static double round4(double value) {
+        return Math.round(value * 10000.0) / 10000.0;
     }
 
     public static double layerHeightSpacing(int layerIndex, double inputSpacing) {
