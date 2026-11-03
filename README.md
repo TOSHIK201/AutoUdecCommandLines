@@ -1,3 +1,6 @@
+<img width="1672" height="941" alt="Image_1792341962044_99" src="https://github.com/user-attachments/assets/7987ffa1-c189-46f9-9bb5-37f34486d588" />
+
+<p></p>
 # AutoUDEC
 
 Java Swing tool for generating UDEC 4.0 command files for a coal-seam roadway model.
